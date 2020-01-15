@@ -1,0 +1,160 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: kakuilan
+ * Date: 2020/1/15
+ * Time: 15:44
+ * Desc: 参数抽象类
+ */
+
+declare(strict_types=1);
+namespace Hyperf\Apihelper\Annotation;
+
+use Hyperf\Di\Annotation\AbstractAnnotation;
+use Lkk\Helpers\ArrayHelper;
+
+abstract class Params extends AbstractAnnotation {
+
+
+    /**
+     * @var string 在哪个结构
+     */
+    public $in;
+
+
+    /**
+     * @var string 字段key,相当于"name[|description]"
+     */
+    public $key;
+
+
+    /**
+     * @var string 单个规则字符串
+     */
+    public $rule;
+
+
+    /**
+     * @var string 多个规则json串,主要针对body数据
+     */
+    public $rules;
+
+
+    /**
+     * @var string 默认值
+     */
+    public $default;
+
+
+    /**
+     * @var string 字段名
+     */
+    public $name;
+
+
+    /**
+     * @var string 字段描述
+     */
+    public $description;
+
+
+    /**
+     * @var array 详细规则数组
+     */
+    public $_detailRules = [];
+
+
+    /**
+     * @var bool 是否必须
+     */
+    public $_required = false;
+
+
+    public function __construct($value = null) {
+        parent::__construct($value);
+        $this->setName()->setDescription()->setDetailRules()->setRquire()->setType();
+    }
+
+
+    /**
+     * 设置字段名
+     * @param string $name
+     * @return $this
+     */
+    public function setName(string $name='') {
+        if(empty($name)) {
+            $this->name = explode('|', $this->key)[0];
+        }else{
+            $this->name = $name;
+        }
+
+
+        return $this;
+    }
+
+
+    /**
+     * 设置字段描述
+     * @param string $desc
+     * @return $this
+     */
+    public function setDescription(string $desc='') {
+        if(empty($desc)) {
+            $this->description = $this->description ?: explode('|', $this->key)[1] ?? $this->name;
+        }else{
+            $this->description = $desc;
+        }
+
+        return $this;
+    }
+
+
+    /**
+     * 设置详细规则数组(将规则串拆分为数组)
+     * @return $this
+     */
+    public function setDetailRules() {
+        if(!empty($this->rule)) {
+            $arr = explode('|', $this->rule);
+            array_walk($arr, function(&$item) {
+                $item = trim($item);
+                return $item;
+            });
+
+            $this->_detailRules = array_unique(array_filter($arr));
+        }
+
+        return $this;
+    }
+
+
+    /**
+     * 设置字段是否必填
+     * @return $this
+     */
+    public function setRquire() {
+        $this->_required = ArrayHelper::dstrpos('required', $this->_detailRules);
+
+        return $this;
+    }
+
+
+    /**
+     * 设置字段类型
+     * @return $this
+     */
+    public function setType() {
+        $type = 'string';
+
+        if(ArrayHelper::dstrpos('int', $this->_detailRules) || ArrayHelper::dstrpos('integer', $this->_detailRules)) {
+            $type = 'integer';
+        }elseif (ArrayHelper::dstrpos('float', $this->_detailRules)) {
+            $type = 'float';
+        }
+
+        $this->type = $type;
+
+        return $this;
+    }
+
+}
