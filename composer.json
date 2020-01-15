@@ -1,0 +1,46 @@
+{
+    "name": "hyperf/apihelper",
+    "type": "library",
+    "license": "Apache-2.0",
+    "keywords": [
+        "php",
+        "hyperf"
+    ],
+    "description": "hyperf api swagger helper",
+    "autoload": {
+        "psr-4": {
+            "Hyperf\\Apihelper\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "HyperfTest\\": "tests"
+        }
+    },
+    "require": {
+        "php": ">=7.2",
+        "ext-swoole": ">=4.4",
+        "hyperf/di": "1.1.*",
+        "hyperf/validation": "^1.1",
+        "kakuilan/kphplib": "^0.1.6"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^2.14",
+        "phpstan/phpstan": "^0.10.5",
+        "hyperf/testing": "1.1.*",
+        "swoft/swoole-ide-helper": "dev-master"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "scripts": {
+        "test": "co-phpunit -c phpunit.xml --colors=always",
+        "analyse": "phpstan analyse --memory-limit 300M -l 0 ./src",
+        "cs-fix": "php-cs-fixer fix $1"
+    },
+    "extra": {
+        "hyperf": {
+            "config": "Hyperf\\Apihelper\\ConfigProvider"
+        }
+    }
+}
