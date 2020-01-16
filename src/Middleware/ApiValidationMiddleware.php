@@ -12,10 +12,10 @@ namespace Hyperf\Apihelper\Middleware;
 
 use FastRoute\Dispatcher;
 use Hyperf\Apihelper\Annotation\ApiResponse;
-use Hyperf\Apihelper\Annotation\ParamBody;
-use Hyperf\Apihelper\Annotation\ParamForm;
-use Hyperf\Apihelper\Annotation\ParamHeader;
-use Hyperf\Apihelper\Annotation\ParamQuery;
+use Hyperf\Apihelper\Annotation\Param\Body;
+use Hyperf\Apihelper\Annotation\Param\Form;
+use Hyperf\Apihelper\Annotation\Param\Header;
+use Hyperf\Apihelper\Annotation\Param\Query;
 use Hyperf\Apihelper\ApiAnnotation;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\HttpMessage\Stream\SwooleStream;
@@ -23,36 +23,37 @@ use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
 use Hyperf\HttpServer\CoreMiddleware;
 use Hyperf\HttpServer\Router\Handler;
+use Hyperf\Logger\LoggerFactory;
+use Hyperf\Utils\Context;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Hyperf\Logger\LoggerFactory;
-use Hyperf\Utils\Context;
 
-class ApiValidationMiddleware extends CoreMiddleware
-{
+class ApiValidationMiddleware extends CoreMiddleware {
 
     /**
      * @var RequestInterface
      */
     protected $request;
+
     /**
      * @var HttpResponse
      */
     protected $response;
+
     /**
      * @var LoggerFactory
      */
     protected $log;
+
     /**
      * @Inject()
      * @var \Hyperf\Apihelper\Validation\ValidationInterface
      */
     protected $validation;
 
-    public function __construct(ContainerInterface $container, HttpResponse $response, RequestInterface $request, LoggerFactory $logger)
-    {
+    public function __construct(ContainerInterface $container, HttpResponse $response, RequestInterface $request, LoggerFactory $logger) {
         $this->container = $container;
         $this->response = $response;
         $this->request = $request;
@@ -60,8 +61,7 @@ class ApiValidationMiddleware extends CoreMiddleware
         parent::__construct($container, 'http');
     }
 
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
-    {
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
         $uri = $request->getUri();
         $routes = $this->dispatcher->dispatch($request->getMethod(), $uri->getPath());
         if ($routes[0] !== Dispatcher::FOUND) {
@@ -85,16 +85,16 @@ class ApiValidationMiddleware extends CoreMiddleware
         $body_rules = [];
         $form_data_rules = [];
         foreach ($annotations as $annotation) {
-            if ($annotation instanceof ParamHeader) {
+            if ($annotation instanceof Header) {
                 $header_rules[$annotation->key] = $annotation->rule;
             }
-            if ($annotation instanceof ParamQuery) {
+            if ($annotation instanceof Query) {
                 $query_rules[$annotation->key] = $annotation->rule;
             }
-            if ($annotation instanceof ParamBody) {
+            if ($annotation instanceof Body) {
                 $body_rules = $annotation->rules;
             }
-            if ($annotation instanceof ParamForm) {
+            if ($annotation instanceof Form) {
                 $form_data_rules[$annotation->key] = $annotation->rule;
             }
         }
@@ -140,10 +140,10 @@ class ApiValidationMiddleware extends CoreMiddleware
         return $handler->handle($request);
     }
 
-    public function check($rules, $data, $controllerInstance)
-    {
+    public function check($rules, $data, $controllerInstance) {
         $validated_data = $this->validation->check($rules, $data, $controllerInstance);
 
         return [$validated_data, $this->validation->getError()];
     }
+
 }

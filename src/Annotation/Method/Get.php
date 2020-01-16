@@ -8,13 +8,15 @@
  */
 
 declare(strict_types=1);
-namespace Hyperf\Apihelper\Annotation;
+namespace Hyperf\Apihelper\Annotation\Method;
+
+use Hyperf\Apihelper\Annotation\Methods;
 
 /**
  * @Annotation
  * @Target({"METHOD"})
  */
-class MethGet extends Methods {
+class Get extends Methods {
 
     public $methods = ['GET'];
 

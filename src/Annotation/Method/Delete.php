@@ -8,13 +8,15 @@
  */
 
 declare(strict_types=1);
-namespace Hyperf\Apihelper\Annotation;
+namespace Hyperf\Apihelper\Annotation\Method;
+
+use Hyperf\Apihelper\Annotation\Methods;
 
 /**
  * @Annotation
  * @Target({"METHOD"})
  */
-class MethDelete extends Methods {
+class Delete extends Methods {
 
     public $methods = ['DELETE'];
 

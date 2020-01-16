@@ -11,8 +11,8 @@ declare(strict_types=1);
 namespace Hyperf\Apihelper\Swagger;
 
 use Hyperf\Apihelper\Annotation\ApiResponse;
-use Hyperf\Apihelper\Annotation\ParamBody;
-use Hyperf\Apihelper\Annotation\ParamPath;
+use Hyperf\Apihelper\Annotation\Param\Body;
+use Hyperf\Apihelper\Annotation\Param\Path;
 use Hyperf\Apihelper\Annotation\Params;
 use Hyperf\Apihelper\ApiAnnotation;
 use Hyperf\Contract\ConfigInterface;
@@ -21,7 +21,6 @@ use Hyperf\Utils\ApplicationContext;
 
 
 class SwaggerJson {
-
 
 
     public $confGlobal;
@@ -221,7 +220,7 @@ class SwaggerJson {
             ];
 
             //单独处理body参数
-            if ($item instanceof ParamBody) {
+            if ($item instanceof Body) {
                 $modelName = implode('', array_map('ucfirst', explode('/', $path)));
 
                 $schema = $this->rules2schema($item->rules);
@@ -231,7 +230,7 @@ class SwaggerJson {
             }
 
             //TODO 处理 path 参数
-            if ($item instanceof ParamPath) {
+            if ($item instanceof Path) {
 
             }
         }

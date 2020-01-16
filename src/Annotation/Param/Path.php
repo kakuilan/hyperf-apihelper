@@ -8,13 +8,15 @@
  */
 
 declare(strict_types=1);
-namespace Hyperf\Apihelper\Annotation;
+namespace Hyperf\Apihelper\Annotation\Param;
+
+use Hyperf\Apihelper\Annotation\Params;
 
 /**
  * @Annotation
  * @Target({"METHOD"})
  */
-class ParamPath extends Params {
+class Path extends Params {
 
     public $in = 'path';
 

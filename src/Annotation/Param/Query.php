@@ -7,14 +7,15 @@
  * Desc: query数据注解
  */
 
-declare(strict_types=1);
-namespace Hyperf\Apihelper\Annotation;
+namespace Hyperf\Apihelper\Annotation\Param;
+
+use Hyperf\Apihelper\Annotation\Params;
 
 /**
  * @Annotation
  * @Target({"METHOD"})
  */
-class ParamQuery extends Params {
+class Query extends Params {
 
     public $in = 'query';
 
