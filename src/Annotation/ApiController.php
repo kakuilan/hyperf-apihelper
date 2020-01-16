@@ -18,6 +18,10 @@ use Hyperf\HttpServer\Annotation\Controller;
  */
 class ApiController extends Controller {
 
+
+    /**
+     * @var string 分组标签
+     */
     public $tag;
 
     /**

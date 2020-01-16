@@ -13,7 +13,7 @@ namespace Hyperf\Apihelper\Annotation;
 use Hyperf\Di\Annotation\AbstractAnnotation;
 use Lkk\Helpers\ArrayHelper;
 
-abstract class Params extends AbstractAnnotation {
+class Params extends AbstractAnnotation {
 
 
     /**
@@ -35,7 +35,7 @@ abstract class Params extends AbstractAnnotation {
 
 
     /**
-     * @var string 多个规则json串,主要针对body数据
+     * @var array 多个规则json的串,主要针对body数据,自动解释为数组
      */
     public $rules;
 
@@ -67,7 +67,13 @@ abstract class Params extends AbstractAnnotation {
     /**
      * @var bool 是否必须
      */
-    public $_required = false;
+    public $required = false;
+
+
+    /**
+     * @var string 字段类型
+     */
+    public $type;
 
 
     public function __construct($value = null) {
@@ -133,7 +139,7 @@ abstract class Params extends AbstractAnnotation {
      * @return $this
      */
     public function setRquire() {
-        $this->_required = ArrayHelper::dstrpos('required', $this->_detailRules);
+        $this->required = ArrayHelper::dstrpos('required', $this->_detailRules);
 
         return $this;
     }

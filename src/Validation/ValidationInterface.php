@@ -8,7 +8,7 @@
  */
 
 declare(strict_types=1);
-namespace Hyperf\Apihelper\Validatioin;
+namespace Hyperf\Apihelper\Validation;
 
 interface ValidationInterface {
     public function check(array $rules, array $data, object $obj = null, $keyTree = null);

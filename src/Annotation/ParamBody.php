@@ -14,7 +14,7 @@ namespace Hyperf\Apihelper\Annotation;
  * @Annotation
  * @Target({"METHOD"})
  */
-class Body extends Params {
+class ParamBody extends Params {
 
     public $in = 'body';
 

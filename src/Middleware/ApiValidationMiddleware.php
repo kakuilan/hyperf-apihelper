@@ -1,0 +1,149 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: kakuilan
+ * Date: 2020/1/16
+ * Time: 15:53
+ * Desc:
+ */
+
+declare(strict_types=1);
+namespace Hyperf\Apihelper\Middleware;
+
+use FastRoute\Dispatcher;
+use Hyperf\Apihelper\Annotation\ApiResponse;
+use Hyperf\Apihelper\Annotation\ParamBody;
+use Hyperf\Apihelper\Annotation\ParamForm;
+use Hyperf\Apihelper\Annotation\ParamHeader;
+use Hyperf\Apihelper\Annotation\ParamQuery;
+use Hyperf\Apihelper\ApiAnnotation;
+use Hyperf\Di\Annotation\Inject;
+use Hyperf\HttpMessage\Stream\SwooleStream;
+use Hyperf\HttpServer\Contract\RequestInterface;
+use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
+use Hyperf\HttpServer\CoreMiddleware;
+use Hyperf\HttpServer\Router\Handler;
+use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use Hyperf\Logger\LoggerFactory;
+use Hyperf\Utils\Context;
+
+class ApiValidationMiddleware extends CoreMiddleware
+{
+
+    /**
+     * @var RequestInterface
+     */
+    protected $request;
+    /**
+     * @var HttpResponse
+     */
+    protected $response;
+    /**
+     * @var LoggerFactory
+     */
+    protected $log;
+    /**
+     * @Inject()
+     * @var \Hyperf\Apihelper\Validation\ValidationInterface
+     */
+    protected $validation;
+
+    public function __construct(ContainerInterface $container, HttpResponse $response, RequestInterface $request, LoggerFactory $logger)
+    {
+        $this->container = $container;
+        $this->response = $response;
+        $this->request = $request;
+        $this->log = $logger->get('validation');
+        parent::__construct($container, 'http');
+    }
+
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    {
+        $uri = $request->getUri();
+        $routes = $this->dispatcher->dispatch($request->getMethod(), $uri->getPath());
+        if ($routes[0] !== Dispatcher::FOUND) {
+
+            return $handler->handle($request);
+        }
+
+        if ($routes[1] instanceof Handler) {
+            [$controller, $action] = [
+                $routes[1]->callback[0],
+                $routes[1]->callback[1]
+            ];
+        } else {
+            [$controller, $action] = $this->prepareHandler($routes[1]);
+        }
+
+        $controllerInstance = $this->container->get($controller);
+        $annotations = ApiAnnotation::methodMetadata($controller, $action);
+        $header_rules = [];
+        $query_rules = [];
+        $body_rules = [];
+        $form_data_rules = [];
+        foreach ($annotations as $annotation) {
+            if ($annotation instanceof ParamHeader) {
+                $header_rules[$annotation->key] = $annotation->rule;
+            }
+            if ($annotation instanceof ParamQuery) {
+                $query_rules[$annotation->key] = $annotation->rule;
+            }
+            if ($annotation instanceof ParamBody) {
+                $body_rules = $annotation->rules;
+            }
+            if ($annotation instanceof ParamForm) {
+                $form_data_rules[$annotation->key] = $annotation->rule;
+            }
+        }
+
+        if ($header_rules) {
+            $headers = $request->getHeaders();
+            $headers = array_map(function($item) {
+                return $item[0];
+            }, $headers);
+            [$data, $error] = $this->check($header_rules, $headers, $controllerInstance);
+            if ($data === false) {
+                return $this->response->json(ApiResponse::doFail([400, implode(PHP_EOL, $error)]));
+            }
+        }
+
+        if ($query_rules) {
+            [$data, $error] = $this->check($query_rules, $request->getQueryParams(), $controllerInstance);
+            if ($data === false) {
+                return $this->response->json([
+                    'code' => -1,
+                    'message' => implode(PHP_EOL, $error)
+                ]);
+            }
+            Context::set(ServerRequestInterface::class, $request->withQueryParams($data));
+        }
+
+        if ($body_rules) {
+            [$data, $error] = $this->check($body_rules, (array)json_decode($request->getBody()->getContents(), true), $controllerInstance);
+            if ($data === false) {
+                return $this->response->json(ApiResponse::doFail([400, implode(PHP_EOL, $error)]));
+            }
+            Context::set(ServerRequestInterface::class, $request->withBody(new SwooleStream(json_encode($data))));
+        }
+
+        if ($form_data_rules) {
+            [$data, $error] = $this->check($form_data_rules, $request->getParsedBody(), $controllerInstance);
+            if ($data === false) {
+                return $this->response->json(ApiResponse::doFail([400, implode(PHP_EOL, $error)]));
+            }
+            Context::set(ServerRequestInterface::class, $request->withParsedBody($data));
+        }
+
+        return $handler->handle($request);
+    }
+
+    public function check($rules, $data, $controllerInstance)
+    {
+        $validated_data = $this->validation->check($rules, $data, $controllerInstance);
+
+        return [$validated_data, $this->validation->getError()];
+    }
+}
