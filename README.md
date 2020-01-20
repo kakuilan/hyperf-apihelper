@@ -15,7 +15,7 @@ php bin/hyperf.php vendor:publish kakuilan/hyperf-apihelper
 ```
 
 - 安装swagger-ui  
-下载https://github.com/swagger-api/swagger-ui并解压,拷贝dist目录中的文件到应用项目目录public/swagger
+下载[swagger-ui](https://github.com/swagger-api/swagger-ui)并解压,拷贝dist目录中的文件到应用项目目录public/swagger
 
 
 ### 配置
