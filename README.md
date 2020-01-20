@@ -1,5 +1,7 @@
 # hyperf-apihelper
-hyperf api swagger helper
+hyperf api swagger helper.  
+通过注解定义接口相关路径和参数,本中间件将自动验证接口参数;并生成json,供swagger接口文档测试使用.
+
 
 ### 说明
 本组件是参考[apidog](https://github.com/daodao97/apidog)的改写
@@ -17,7 +19,7 @@ php bin/hyperf.php vendor:publish kakuilan/hyperf-apihelper
 
 
 ### 配置
-- 修改config/autoload/swagger.php中的配置,将host改为你的域名,如test.com
+- 修改config/autoload/swagger.php中的配置,将host改为你的域名,如test.com,则接口文档地址为test.com/swagger
 - 修改config/autoload/middlewares.php中间件配置,如
 ```php
 return [
@@ -71,7 +73,8 @@ class Test extends AbstractController {
      * @ApiResponse(code=200, schema={"$ref":"Response"})
      */
     public function get() {
-        return ApiResponse::doSuccess();
+        //return ApiResponse::doFail([]);
+        return ApiResponse::doSuccess([]);
     }
 
 
@@ -113,6 +116,12 @@ class Test extends AbstractController {
   - 控制器验证方法,如上例中的cb_chkHello,规则名以cb_开头,后跟控制器的方法名chkHello.
   验证方法必须定义接受3个参数:$value, $field, $options;返回结果:若检查通过为true,否则为失败信息.
   
+
+### 响应体结构
+- 接口操作成功,返回{"status":true,"msg":"success","code":200,"data":[]}
+- 接口操作失败,返回{"status":false,"msg":"fail","code":400,"data":[]}
+- 自定义你自己的响应体结构,可参考ApiValidationMiddleware和ValidationExceptionHandler,重写你自己的中间件和异常处理.
+
 
 ### swagger生成
 
