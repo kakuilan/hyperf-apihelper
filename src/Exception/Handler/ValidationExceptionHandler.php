@@ -11,9 +11,10 @@ declare(strict_types=1);
 namespace Hyperf\Apihelper\Exception\Handler;
 
 use Hyperf\Apihelper\Annotation\ApiResponse;
+use Hyperf\Apihelper\Exception\ValidationException as MyValidationException;
 use Hyperf\ExceptionHandler\ExceptionHandler;
 use Hyperf\HttpMessage\Stream\SwooleStream;
-use Hyperf\Validation\ValidationException;
+use Hyperf\Validation\ValidationException as HyperfValidationException;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
@@ -22,14 +23,20 @@ class ValidationExceptionHandler extends ExceptionHandler {
     public function handle(Throwable $throwable, ResponseInterface $response) {
         $this->stopPropagation();
 
-        /** @var \Hyperf\Validation\ValidationException $throwable */
-        $msg = $throwable->validator->errors()->first();
-        $res = ApiResponse::doFail([400, $msg]);
+        if ($throwable instanceof HyperfValidationException) {
+            $msg = $throwable->validator->errors()->first();
+            $res = ApiResponse::doFail([400, $msg]);
+        }elseif ($throwable instanceof MyValidationException) {
+            $res = ApiResponse::doFail([400, $throwable->getMessage()]);
+        }else{
+            $res = ApiResponse::doFail([400, 'unknow error']);
+        }
 
         return $response->withBody(new SwooleStream(json_encode($res)));
     }
 
     public function isValid(Throwable $throwable): bool {
-        return $throwable instanceof ValidationException;
+        return $throwable instanceof HyperfValidationException || $throwable instanceof MyValidationException;
     }
+
 }

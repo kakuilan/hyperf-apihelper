@@ -10,6 +10,7 @@
 declare(strict_types=1);
 namespace Hyperf\Apihelper\Swagger;
 
+use Lkk\Helpers\ArrayHelper;
 use Hyperf\Apihelper\Annotation\ApiResponse;
 use Hyperf\Apihelper\Annotation\Param\Body;
 use Hyperf\Apihelper\Annotation\Param\Path;
@@ -18,14 +19,23 @@ use Hyperf\Apihelper\ApiAnnotation;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\HttpServer\Annotation\Mapping;
 use Hyperf\Utils\ApplicationContext;
+use Lkk\Helpers\ValidateHelper;
 
 
 class SwaggerJson {
 
 
+    /**
+     * 全局配置
+     * @var ConfigInterface|mixed
+     */
     public $confGlobal;
 
 
+    /**
+     * swagger配置
+     * @var mixed
+     */
     public $confSwagger;
 
 
@@ -105,12 +115,29 @@ class SwaggerJson {
      * 初始化常用模型定义
      */
     public function initDefinitions() {
-        $successRespon = ApiResponse::$baseSchema;
-
-        $failRespone = ApiResponse::$baseSchema;
-        $failRespone['status'] = false;
-        $failRespone['msg'] = 'fail';
-        $failRespone['code'] = 400;
+        $response = [
+            'type' => 'object',
+            'required' => [],
+            'properties' => [
+                'status' => [
+                    'type' => 'boolean',
+                    'example' => true,
+                ],
+                'msg' => [
+                    'type' => 'string',
+                    'example' => 'success',
+                ],
+                'code' => [
+                    'type' => 'integer',
+                    'format' => 'int64',
+                    'example' => 200,
+                ],
+                'data' => [
+                    'type' => 'array',
+                    'example' => [],
+                ],
+            ],
+        ];
 
         $arraySchema = [
             'type' => 'array',
@@ -127,8 +154,7 @@ class SwaggerJson {
             ],
         ];
 
-        $this->confSwagger['definitions']['ResSuccess'] = $successRespon;
-        $this->confSwagger['definitions']['ResFail'] = $failRespone;
+        $this->confSwagger['definitions']['Response'] = $response;
         $this->confSwagger['definitions']['ModelArray'] = $arraySchema;
         $this->confSwagger['definitions']['ModelObject'] = $objectSchema;
     }
@@ -178,18 +204,35 @@ class SwaggerJson {
      * @return string
      */
     public function getTypeByRule(string $rule) {
-        $default = explode('|', preg_replace('/\[.*\]/', '', $rule));
-        if (array_intersect($default, ['integer', 'int', 'lt', 'gt', 'ge'])) {
+        $details = explode('|', $rule);
+        $digItem = ArrayHelper::dstrpos($rule, ['gt','gte','lt','lte','max','min','numeric'], true);
+
+        if (array_intersect($details, ['integer', 'int'])) {
             return 'integer';
-        }
-        if (array_intersect($default, ['float'])) {
+        }elseif (array_intersect($details, ['float'])) {
             return 'float';
-        }
-        if (array_intersect($default, ['array'])) {
+        }elseif (array_intersect($details, ['boolean', 'bool'])) {
+            return 'boolean';
+        }elseif (array_intersect($details, ['array'])) {
             return 'array';
-        }
-        if (array_intersect($default, ['object'])) {
+        }elseif (array_intersect($details, ['object'])) {
             return 'object';
+        }elseif ($digItem) {
+            foreach ($details as $detail) {
+                if(strpos($detail, ':') && stripos($detail, $digItem) !==false) {
+                    //是否有规则选项,如 between:1,20 中的 :1,20
+                    preg_match('/:(.*)/', $detail, $match);
+                    $options = $match[1] ?? '';
+                    $arr = explode(',', $options);
+                    $first = $arr[0] ?? '';
+
+                    if (ValidateHelper::isFloat($first)) {
+                        return 'float';
+                    }elseif (ValidateHelper::isInteger($first)) {
+                        return 'integer';
+                    }
+                }
+            }
         }
 
         return 'string';
@@ -239,8 +282,14 @@ class SwaggerJson {
     }
 
 
-
-    public function makeResponses(array $responses,string $path,string $method) {
+    /**
+     * 生成响应
+     * @param array $responses
+     * @param string $path
+     * @param string $method
+     * @return array
+     */
+    public function makeResponses(array $responses, string $path, string $method) {
         $path = self::turnPath($path);
         $resp = [];
 
@@ -251,7 +300,7 @@ class SwaggerJson {
             ];
             if ($item->schema) {
                 //引用已定义的模型
-                if(array_key_exists('$ref', $item->schema) && array_key_exists($item->schema['$ref'], $this->confSwagger['definitions'])) {
+                if(is_array($item->schema) && array_key_exists('$ref', $item->schema) && array_key_exists($item->schema['$ref'], $this->confSwagger['definitions'])) {
                     $resp[$item->code]['schema']['$ref'] = '#/definitions/' . $item->schema['$ref'];
                 }else{
                     $modelName = implode('', array_map('ucfirst', explode('/', $path))) . ucfirst($method) .'Response' . $item->code;
@@ -267,6 +316,13 @@ class SwaggerJson {
     }
 
 
+    /**
+     * 响应结构体定义
+     * @param $schema
+     * @param $modelName
+     * @param int $level
+     * @return array|bool
+     */
     public function responseSchemaTodefinition($schema, $modelName, $level = 0) {
         if (!$schema) {
             return false;

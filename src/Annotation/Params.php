@@ -88,12 +88,11 @@ class Params extends AbstractAnnotation {
      * @return $this
      */
     public function setName(string $name='') {
-        if(empty($name)) {
-            $this->name = explode('|', $this->key)[0];
-        }else{
+        if(!empty($name)) {
             $this->name = $name;
+        }elseif (!empty($this->key)) {
+            $this->name = explode('|', $this->key)[0];
         }
-
 
         return $this;
     }
@@ -105,10 +104,10 @@ class Params extends AbstractAnnotation {
      * @return $this
      */
     public function setDescription(string $desc='') {
-        if(empty($desc)) {
-            $this->description = $this->description ?: explode('|', $this->key)[1] ?? $this->name;
-        }else{
+        if(!empty($desc)) {
             $this->description = $desc;
+        }else {
+            $this->description = $this->description ?: explode('|', strval($this->key))[1] ?? $this->name;
         }
 
         return $this;

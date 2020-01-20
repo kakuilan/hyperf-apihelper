@@ -42,10 +42,6 @@ class ApiValidationMiddleware extends CoreMiddleware {
      */
     protected $response;
 
-    /**
-     * @var LoggerFactory
-     */
-    protected $log;
 
     /**
      * @Inject()
@@ -53,19 +49,27 @@ class ApiValidationMiddleware extends CoreMiddleware {
      */
     protected $validation;
 
-    public function __construct(ContainerInterface $container, HttpResponse $response, RequestInterface $request, LoggerFactory $logger) {
+
+    public function __construct(ContainerInterface $container, HttpResponse $response, RequestInterface $request) {
         $this->container = $container;
         $this->response = $response;
         $this->request = $request;
-        $this->log = $logger->get('validation');
+
         parent::__construct($container, 'http');
     }
 
+
+    /**
+     * 执行处理
+     * @param ServerRequestInterface $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
+     * @throws \Doctrine\Common\Annotations\AnnotationException
+     */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
         $uri = $request->getUri();
         $routes = $this->dispatcher->dispatch($request->getMethod(), $uri->getPath());
         if ($routes[0] !== Dispatcher::FOUND) {
-
             return $handler->handle($request);
         }
 
@@ -80,59 +84,57 @@ class ApiValidationMiddleware extends CoreMiddleware {
 
         $controllerInstance = $this->container->get($controller);
         $annotations = ApiAnnotation::methodMetadata($controller, $action);
-        $header_rules = [];
-        $query_rules = [];
-        $body_rules = [];
-        $form_data_rules = [];
+        $headerRules = [];
+        $queryRules = [];
+        $bodyRules = [];
+        $formRules = [];
+
         foreach ($annotations as $annotation) {
             if ($annotation instanceof Header) {
-                $header_rules[$annotation->key] = $annotation->rule;
+                $headerRules[$annotation->key] = $annotation->rule;
             }
             if ($annotation instanceof Query) {
-                $query_rules[$annotation->key] = $annotation->rule;
+                $queryRules[$annotation->key] = $annotation->rule;
             }
             if ($annotation instanceof Body) {
-                $body_rules = $annotation->rules;
+                $bodyRules = $annotation->rules;
             }
             if ($annotation instanceof Form) {
-                $form_data_rules[$annotation->key] = $annotation->rule;
+                $formRules[$annotation->key] = $annotation->rule;
             }
         }
 
-        if ($header_rules) {
+        if ($headerRules) {
             $headers = $request->getHeaders();
             $headers = array_map(function($item) {
                 return $item[0];
             }, $headers);
-            [$data, $error] = $this->check($header_rules, $headers, $controllerInstance);
+            [$data, $error] = $this->check($headerRules, $headers, $controllerInstance);
             if ($data === false) {
-                return $this->response->json(ApiResponse::doFail([400, implode(PHP_EOL, $error)]));
+                return $this->response->json(ApiResponse::doFail([400, $error]));
             }
         }
 
-        if ($query_rules) {
-            [$data, $error] = $this->check($query_rules, $request->getQueryParams(), $controllerInstance);
+        if ($queryRules) {
+            [$data, $error] = $this->check($queryRules, $request->getQueryParams(), $controllerInstance);
             if ($data === false) {
-                return $this->response->json([
-                    'code' => -1,
-                    'message' => implode(PHP_EOL, $error)
-                ]);
+                return $this->response->json(ApiResponse::doFail([400, $error]));
             }
             Context::set(ServerRequestInterface::class, $request->withQueryParams($data));
         }
 
-        if ($body_rules) {
-            [$data, $error] = $this->check($body_rules, (array)json_decode($request->getBody()->getContents(), true), $controllerInstance);
+        if ($bodyRules) {
+            [$data, $error] = $this->check($bodyRules, (array)json_decode($request->getBody()->getContents(), true), $controllerInstance);
             if ($data === false) {
-                return $this->response->json(ApiResponse::doFail([400, implode(PHP_EOL, $error)]));
+                return $this->response->json(ApiResponse::doFail([400, $error]));
             }
             Context::set(ServerRequestInterface::class, $request->withBody(new SwooleStream(json_encode($data))));
         }
 
-        if ($form_data_rules) {
-            [$data, $error] = $this->check($form_data_rules, $request->getParsedBody(), $controllerInstance);
+        if ($formRules) {
+            [$data, $error] = $this->check($formRules, $request->getParsedBody(), $controllerInstance);
             if ($data === false) {
-                return $this->response->json(ApiResponse::doFail([400, implode(PHP_EOL, $error)]));
+                return $this->response->json(ApiResponse::doFail([400, $error]));
             }
             Context::set(ServerRequestInterface::class, $request->withParsedBody($data));
         }
@@ -140,10 +142,20 @@ class ApiValidationMiddleware extends CoreMiddleware {
         return $handler->handle($request);
     }
 
-    public function check($rules, $data, $controllerInstance) {
-        $validated_data = $this->validation->check($rules, $data, $controllerInstance);
 
-        return [$validated_data, $this->validation->getError()];
+    /**
+     * 检查
+     * @param $rules
+     * @param $data
+     * @param $controllerInstance
+     * @return array
+     */
+    public function check($rules, $data, $controllerInstance) {
+        $validatedData = $this->validation->check($rules, $data, $controllerInstance);
+        $errors = $this->validation->getError();
+        $error = empty($errors) ? '' : current($errors);
+
+        return [$validatedData, $error];
     }
 
 }

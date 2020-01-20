@@ -53,12 +53,7 @@ class ApiResponse extends AbstractAnnotation {
         if (is_array($this->description)) {
             $this->description = json_encode($this->description, JSON_UNESCAPED_UNICODE);
         }
-        $this->makeSchema();
-    }
 
-
-    public function makeSchema() {
-        //TODO 生成json结构
     }
 
 
@@ -102,7 +97,7 @@ class ApiResponse extends AbstractAnnotation {
             $msg = end($code);
             $code = reset($code);
         }else{
-            $msg = trans("code.{$code}", $trans);
+            $msg = 'fail';
         }
 
         $codeNo = ($code!=$msg && is_numeric($code)) ? intval($code) : 400;
