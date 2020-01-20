@@ -15,7 +15,7 @@ return [
         'version' => '1.0.0', //API 文档版本
         'title' => 'HYPERF API DOC', //API 文档标题
     ],
-    'host' => 'hyperf.io', //主机名
+    'host' => 'hyperf.io', //站点域名
     'schemes' => ['http'], //协议
     'basePath' => '', //基础路径,如/v1
 ];
