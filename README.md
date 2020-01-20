@@ -1,5 +1,6 @@
 # hyperf-apihelper
-hyperf api swagger helper.  
+hyperf api swagger helper.   
+**api接口自动验证,swagger接口文档**   
 通过注解定义接口相关路径和参数,本中间件将自动验证接口参数;并生成json,供swagger接口文档测试使用.
 
 
