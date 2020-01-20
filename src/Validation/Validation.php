@@ -152,15 +152,25 @@ class Validation implements ValidationInterface {
                 }
 
                 // cb_xxx,调用控制器的方法xxx
-                // xxx方法,接受3个参数:$fieldValue, $field, $optionArr;返回结果:若检查通过为true,否则为失败信息
+                // xxx方法,接受3个参数:$fieldValue, $field, $optionArr;
+                // 返回结果是一个数组:若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.
                 $controllerMethod = str_replace('cb_', '', $ruleName);
                 if (strpos($ruleName, 'cb_') !== false && method_exists($obj, $controllerMethod)) {
                     $chkRes = call_user_func_array([
                         $obj,
                         $controllerMethod,
                     ], [$fieldValue, $field, $optionArr]);
-                    if($chkRes!==true) {
-                        $this->errors[] = strval($chkRes);
+
+                    if (!is_array($chkRes) || count($chkRes)!=2 || !is_bool($chkRes[0])) {
+                        $msg = $this->translator->trans('apihelper.rule_callback_error_result', ['rule'=> $controllerMethod]);
+                        throw new ValidationException($msg);
+                    }
+
+                    [$chk, $val] = $chkRes;
+                    if($chk!==true) {
+                        $this->errors[] = strval($val);
+                    }elseif(!is_null($val)){
+                        $fieldValue = $val;
                     }
                 }
             }

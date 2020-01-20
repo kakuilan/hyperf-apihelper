@@ -84,12 +84,18 @@ class Test extends AbstractController {
      * @param mixed $value 字段值
      * @param string $field 字段名
      * @param array $options 参数选项
-     * @return bool|string 验证通过返回true,否则返回错误消息
+     * @return array
      */
     public function chkHello($value, string $field, array $options) {
-        $res = true;
+        $res = [
+            true,
+            $value,
+        ];
         if(!true) {
-            $res = '具体验证失败的信息';
+            $res = [
+                false,
+                '具体验证失败的信息',
+            ];
         }
 
         return $res;
@@ -114,8 +120,10 @@ class Test extends AbstractController {
     - cnmobile,检查是否中国手机号
     - enum,检查参数值是否枚举值中的一个
     
-  - 控制器验证方法,如上例中的cb_chkHello,规则名以cb_开头,后跟控制器的方法名chkHello.
-  验证方法必须定义接受3个参数:$value, $field, $options;返回结果:若检查通过为true,否则为失败信息.
+  - 控制器验证方法.若需要在控制器中执行比较复杂的逻辑去验证,则可以使用该方式.  
+  如上例中的cb_chkHello,规则名以cb_开头,后跟控制器的方法名chkHello.  
+  验证方法必须定义接受3个参数:$value, $field, $options;  
+  返回结果必须是一个数组:若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.
   
 
 ### 响应体结构
