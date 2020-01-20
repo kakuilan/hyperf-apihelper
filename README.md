@@ -49,6 +49,7 @@ use Hyperf\Apihelper\Annotation\ApiResponse;
 use Hyperf\Apihelper\Annotation\Method\Delete;
 use Hyperf\Apihelper\Annotation\Method\Get;
 use Hyperf\Apihelper\Annotation\Method\Post;
+use Hyperf\Apihelper\Annotation\Method\Put;
 use Hyperf\Apihelper\Annotation\Param\Body;
 use Hyperf\Apihelper\Annotation\Param\Form;
 use Hyperf\Apihelper\Annotation\Param\Header;
