@@ -3,13 +3,9 @@
 declare(strict_types=1);
 namespace Hyperf\Apihelper;
 
-use Lkk\Helpers\DirectoryHelper;
-
 class ConfigProvider {
-    public function __invoke(): array {
-        $conf = require_once __DIR__ . "/../publish/swagger.php";
-        $swaggerDir = DirectoryHelper::formatDir($conf['output_dir']);
 
+    public function __invoke(): array {
         return [
             'dependencies' => [
                 \Hyperf\Apihelper\Validation\ValidationInterface::class => \Hyperf\Apihelper\Validation\Validation::class,
@@ -49,45 +45,46 @@ class ConfigProvider {
                     'id' => 'icon-16',
                     'description' => '',
                     'source' => __DIR__ . '/../publish/swagger/favicon-16x16.png', //源文件
-                    'destination' => $swaggerDir . '/public/swagger/favicon-16x16.png', //目标路径
+                    'destination' => BASE_PATH . '/public/swagger/favicon-16x16.png', //目标路径
                 ],
                 [
                     'id' => 'icon-32',
                     'description' => '',
                     'source' => __DIR__ . '/../publish/swagger/favicon-32x32.png', //源文件
-                    'destination' => $swaggerDir . '/public/swagger/favicon-32x32.png', //目标路径
+                    'destination' => BASE_PATH . '/public/swagger/favicon-32x32.png', //目标路径
                 ],
                 [
                     'id' => 'fonts css',
                     'description' => '',
                     'source' => __DIR__ . '/../publish/swagger/fonts.css', //源文件
-                    'destination' => $swaggerDir . 'fonts.css', //目标路径
+                    'destination' => BASE_PATH . '/public/swagger/fonts.css', //目标路径
                 ],
                 [
                     'id' => 'html',
                     'description' => '',
                     'source' => __DIR__ . '/../publish/swagger/index.html', //源文件
-                    'destination' => $swaggerDir . 'index.html', //目标路径
+                    'destination' => BASE_PATH . '/public/swagger/index.html', //目标路径
                 ],
                 [
                     'id' => 'ui css',
                     'description' => '',
                     'source' => __DIR__ . '/../publish/swagger/swagger-ui.css', //源文件
-                    'destination' => $swaggerDir . 'swagger-ui.css', //目标路径
+                    'destination' => BASE_PATH . '/public/swagger/swagger-ui.css', //目标路径
                 ],
                 [
                     'id' => 'bundle js',
                     'description' => '',
                     'source' => __DIR__ . '/../publish/swagger/swagger-ui-bundle.js', //源文件
-                    'destination' => $swaggerDir . 'swagger-ui-bundle.js', //目标路径
+                    'destination' => BASE_PATH . '/public/swagger/swagger-ui-bundle.js', //目标路径
                 ],
                 [
                     'id' => 'preset js',
                     'description' => '',
                     'source' => __DIR__ . '/../publish/swagger/swagger-ui-standalone-preset.js', //源文件
-                    'destination' => $swaggerDir . 'swagger-ui-standalone-preset.js', //目标路径
+                    'destination' => BASE_PATH . '/public/swagger/swagger-ui-standalone-preset.js', //目标路径
                 ],
             ],
         ];
     }
+
 }
