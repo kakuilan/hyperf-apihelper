@@ -11,6 +11,10 @@ declare(strict_types=1);
 namespace Hyperf\Apihelper\Swagger;
 
 use Lkk\Helpers\ArrayHelper;
+use Lkk\Helpers\DirectoryHelper;
+use Lkk\Helpers\FileHelper;
+use Lkk\Helpers\UrlHelper;
+use Lkk\Helpers\ValidateHelper;
 use Hyperf\Apihelper\Annotation\ApiResponse;
 use Hyperf\Apihelper\Annotation\Param\Body;
 use Hyperf\Apihelper\Annotation\Param\Path;
@@ -19,8 +23,8 @@ use Hyperf\Apihelper\ApiAnnotation;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\HttpServer\Annotation\Mapping;
 use Hyperf\Utils\ApplicationContext;
-use Lkk\Helpers\ValidateHelper;
-
+use Doctrine\Common\Annotations\AnnotationException;
+use RuntimeException;
 
 class SwaggerJson {
 
@@ -39,19 +43,42 @@ class SwaggerJson {
     public $confSwagger;
 
 
+    /**
+     * 版本号分组数组,如[ 'v1'=>['name'=>'v1', 'description'=>'some', 'paths'=>[]] ]
+     * @var array
+     */
+    public $groups;
+
+
     public function __construct() {
         $this->confGlobal = ApplicationContext::getContainer()->get(ConfigInterface::class);
         $this->confSwagger = $this->confGlobal->get('swagger');
     }
 
 
-
+    /**
+     * 添加接口路径信息
+     * @param $className
+     * @param $methodName
+     * @throws AnnotationException
+     */
     public function addPath($className, $methodName) {
         //获取类文件的注解信息
         $classAnnotation = ApiAnnotation::classMetadata($className);
         $methodAnnotations = ApiAnnotation::methodMetadata($className, $methodName);
+        $versionAnnotations = ApiAnnotation::versionMetadata($className);
+
         $params = [];
         $responses = [];
+        $paths = [];
+
+        $hasVersion = is_object($versionAnnotations) && !empty($versionAnnotations->group) && is_string($versionAnnotations->group);
+        //检查版本号是否合法
+        if($hasVersion) {
+            if (!preg_match("/^(?!_)[a-zA-Z0-9_]+$/u", $versionAnnotations->group) ) {
+                throw new RuntimeException('Version group name can only be in english, numerals, and underscores');
+            }
+        }
 
         /** @var \Hyperf\Apihelper\Annotation\Methods $mapping */
         $mapping = null;
@@ -89,7 +116,7 @@ class SwaggerJson {
             }
         }
         $method = strtolower($mapping->methods[0]);
-        $this->confSwagger['paths'][$path][$method] = [
+        $paths[$path][$method] = [
             'tags' => [
                 $tag,
             ],
@@ -108,7 +135,39 @@ class SwaggerJson {
             'responses' => $this->makeResponses($responses, $path, $method),
             'description' => $mapping->description,
         ];
+
+        if($hasVersion) {
+            $this->addGroupInfo($versionAnnotations->group, $versionAnnotations->description, $paths);
+        }else{
+            $this->confSwagger['paths'] = array_merge(($this->confSwagger['paths'] ??[]), $paths);
+        }
     }
+
+
+    /**
+     * 添加版本分组信息
+     * @param string $name
+     * @param string $desc
+     * @param array $paths
+     */
+    protected function addGroupInfo(string $name, string $desc, array $paths=[]) {
+        if(empty($name)) return;
+
+        if(!isset($this->groups[$name])) {
+            $this->groups[$name] = [
+                'name' => $name,
+                'description' => $desc,
+                'paths' => [],
+            ];
+        }
+
+        if(!empty($desc)) $this->groups[$name]['description'] = $desc;
+
+        if(!empty($paths)) $this->groups[$name]['paths'] = array_merge($this->groups[$name]['paths'], $paths);
+
+    }
+
+
 
 
     /**
@@ -380,16 +439,70 @@ class SwaggerJson {
      * 生成json文件
      */
     public function save() {
-        $this->confSwagger['tags'] = array_values($this->confSwagger['tags'] ?? []);
-        $outputFile = $this->confSwagger['output_file'] ?? '';
-        if (!$outputFile) {
-            return;
+        $this->confSwagger['tags'] = array_unique(array_values($this->confSwagger['tags'] ?? []), SORT_REGULAR);
+
+        $saveDir = DirectoryHelper::formatDir($this->confSwagger['output_dir']);
+        $baseName = $this->confSwagger['output_basename'] ?? 'swagger';
+        $openSwagger = boolval($this->confSwagger['output_json']);
+
+        $swaggerDir = str_replace(DirectoryHelper::formatDir(BASE_PATH . '/public'), '', $saveDir);
+        $swaggerDir = rtrim($swaggerDir, '/');
+
+        if(empty($saveDir)) return;
+        unset($this->confSwagger['output_json'], $this->confSwagger['output_dir'], $this->confSwagger['output_basename']);
+
+        //是否开启swagger文档功能
+        if($openSwagger) {
+            $http = $this->confSwagger['schemes'][0] ?? 'http';
+            $siteUrl = UrlHelper::formatUrl(strtolower("{$http}://". $this->confSwagger['host']));
+            $urls = [];
+
+            $swaggerAll = $this->confSwagger; //包含全部版本
+
+            // 生成版本分组文件
+            foreach ($this->groups as $group) {
+                $swaggerData = $this->confSwagger;
+                $swaggerData['paths'] = array_merge(($swaggerData['paths'] ??[]), $group['paths']);
+                $swaggerAll['paths'] = array_merge(($swaggerAll['paths'] ??[]), $group['paths']);
+
+                $versionFile = "{$baseName}-{$group['name']}.json";
+                array_push($urls, [
+                    'url' => "{$siteUrl}/{$swaggerDir}/{$versionFile}",
+                    'name' => "{$group['name']} -- {$group['description']}"
+                ]);
+
+                $filePath = $saveDir . $versionFile;
+                file_put_contents($filePath, json_encode($swaggerData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+            }
+
+            // 全部版本的接口
+            $baseName .= ".json";
+            array_unshift($urls, [
+                'url' => "{$siteUrl}/{$swaggerDir}/{$baseName}",
+                'name' => "all version apis"
+            ]);
+            $filePath = $saveDir . $baseName;
+            file_put_contents($filePath, json_encode($swaggerAll, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+
+            // 修改index.html
+            $htmlFile = $saveDir . 'index.html';
+            $content = file_get_contents($htmlFile);
+            $urlStr = json_encode($urls, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            $urlStr = "urls:" . str_replace("\\/", "/",  $urlStr);
+            $content = preg_replace("/urls:\[.*\]/is", $urlStr, $content, -1);
+            file_put_contents($htmlFile, $content);
+
+        }else{
+            // 删除 *.json文件
+            $fileList = DirectoryHelper::getFileTree(BASE_PATH . '/public/swagger/', 'file');
+            foreach ($fileList as $item) {
+                $ext = FileHelper::getFileExt($item);
+                if ($ext=='json') {
+                    @unlink($item);
+                }
+            }
         }
-        unset($this->confSwagger['output_file']);
-
-        file_put_contents($outputFile, json_encode($this->confSwagger, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     }
-
 
 
 }

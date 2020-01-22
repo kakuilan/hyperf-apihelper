@@ -13,6 +13,7 @@ namespace Hyperf\Apihelper;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationException;
 use Hyperf\Apihelper\Annotation\ApiController;
+use Hyperf\Apihelper\Annotation\ApiVersion;
 use Hyperf\Di\Annotation\AnnotationCollector;
 use Hyperf\Di\ReflectionManager;
 
@@ -26,6 +27,16 @@ class ApiAnnotation {
      */
     public static function classMetadata($className) {
         return AnnotationCollector::getClassAnnotation($className, ApiController::class);
+    }
+
+
+    /**
+     * 获取版本号的元数据
+     * @param $className
+     * @return array|\ArrayAccess|mixed|null
+     */
+    public static function versionMetadata($className) {
+        return AnnotationCollector::getClassAnnotation($className, ApiVersion::class);
     }
 
 
