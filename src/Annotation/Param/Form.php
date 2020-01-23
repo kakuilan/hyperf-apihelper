@@ -18,6 +18,6 @@ use Hyperf\Apihelper\Annotation\Params;
  */
 class Form extends Params {
 
-    public $in = 'form';
+    public $in = 'formData';
 
 }

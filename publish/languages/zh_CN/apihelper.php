@@ -9,6 +9,7 @@
 
 
 return [
+    //验证规则
     'rule_not_defined' => ':rule 验证规则未定义',
     'rule_callback_error_result' => ':rule 控制器验证方法返回结果异常',
     'rule_safe_password_len' => ':field 安全密码长度最少为8位',
@@ -16,4 +17,13 @@ return [
     'rule_natural' => ':field 不是合法的自然数',
     'rule_cnmobile' => ':field 不是合法的手机号',
     'rule_enum' => ':field 必须是 :values 其中之一',
+
+    //响应体错误码
+    '200' => 'Success',
+    '400' => 'Fail',
+    '401' => '无访问权限',
+    '402' => '已在其他设备上登录',
+    '403' => '未登录或登录失效',
+    '404' => '请求内容不存在',
+    '500' => '服务器错误',
 ];

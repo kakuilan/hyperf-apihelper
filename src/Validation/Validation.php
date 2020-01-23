@@ -10,26 +10,26 @@
 declare(strict_types=1);
 namespace Hyperf\Apihelper\Validation;
 
-use Lkk\Helpers\StringHelper;
-use Lkk\Helpers\ValidateHelper;
-use Hyperf\Di\Annotation\Inject;
 use Hyperf\Apihelper\Exception\ValidationException;
+use Hyperf\Contract\TranslatorInterface;
+use Hyperf\Di\Annotation\Inject;
 use Hyperf\Utils\Arr;
-use Hyperf\Utils\Str;
 use Hyperf\Validation\Concerns\ValidatesAttributes;
+use Hyperf\Validation\Contract\ValidatorFactoryInterface;
+use Lkk\Helpers\ValidateHelper;
 
 class Validation implements ValidationInterface {
 
     /**
      * @Inject()
-     * @var \Hyperf\Validation\Contract\ValidatorFactoryInterface
+     * @var ValidatorFactoryInterface
      */
     public $validator;
 
 
     /**
      * @Inject
-     * @var \Hyperf\Contract\TranslatorInterface
+     * @var TranslatorInterface
      */
     private $translator;
 
@@ -66,8 +66,7 @@ class Validation implements ValidationInterface {
         $finalData = $data;
 
         foreach ($rules as $field => $rule) {
-            $fileInfo = explode('|', $field);
-            $fieldName = $fileInfo[0];
+            $fieldName = self::getFieldByKey($field);
             $tree = $keyTree ? $keyTree . '.' . $fieldName : $fieldName;
 
             //嵌套规则数组
@@ -81,6 +80,7 @@ class Validation implements ValidationInterface {
             }
 
             $detailRules = explode('|', $rule);
+            $detailRules = self::sortRules($detailRules);
             $arr1 = $arr2 = [];
             foreach ($detailRules as $detailRule) {
                 $ruleName = self::parseRuleName($detailRule);
@@ -187,6 +187,18 @@ class Validation implements ValidationInterface {
 
 
     /**
+     * 从注解key中获取字段名
+     * @param string $key
+     * @return string
+     */
+    public static function getFieldByKey(string $key):string {
+        $arr = explode('|', $key);
+        $res = $arr[0] ?? '';
+        return $res;
+    }
+
+
+    /**
      * 解析规则名
      * @param string $str
      * @return string
@@ -218,6 +230,34 @@ class Validation implements ValidationInterface {
 
 
     /**
+     * 重新排序规则数组(类型检查放在前面)
+     * @param array $rules
+     * @return array
+     */
+    public static function sortRules(array $rules):array {
+        $priorities = ['int', 'integer', 'bool', 'boolean', 'numeric', 'float', 'string'];
+        $res = [];
+
+        foreach ($rules as $rule) {
+            $lowRule = strtolower($rule);
+            if(in_array($lowRule, $priorities)) {
+                if($lowRule=='int') {
+                    $rule = 'integer';
+                }elseif ($lowRule=='bool') {
+                    $rule = 'boolean';
+                }
+
+                array_unshift($res, $rule);
+            }else{
+                array_push($res, $rule);
+            }
+        }
+
+        return $res;
+    }
+
+
+    /**
      * 获取错误信息
      * @return array
      */
@@ -231,7 +271,7 @@ class Validation implements ValidationInterface {
      * @param $val
      * @return int
      */
-    public function conver_int($val):int {
+    public static function conver_int($val):int {
         return intval($val);
     }
 
@@ -241,7 +281,7 @@ class Validation implements ValidationInterface {
      * @param $val
      * @return int
      */
-    public function conver_integer($val):int {
+    public static function conver_integer($val):int {
         return intval($val);
     }
 
@@ -251,7 +291,7 @@ class Validation implements ValidationInterface {
      * @param $val
      * @return float
      */
-    public function conver_float($val):float {
+    public static function conver_float($val):float {
         return floatval($val);
     }
 
@@ -261,19 +301,35 @@ class Validation implements ValidationInterface {
      * @param $val
      * @return bool
      */
-    public function conver_bool($val):bool {
+    public static function conver_boolean($val):bool {
         if (empty($val)
             || in_array(strtolower($val), [
                 'false',
                 'null',
                 'nil',
                 'none',
+                '0',
             ])) {
 
             return false;
+        }elseif (in_array(strtolower($val), [
+            'true',
+            '1',
+        ])) {
+            return true;
         }
 
         return boolval($val);
+    }
+
+
+    /**
+     * 转换器-布尔值
+     * @param $val
+     * @return bool
+     */
+    public function conver_bool($val):bool {
+        return self::conver_boolean($val);
     }
 
 

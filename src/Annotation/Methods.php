@@ -9,6 +9,7 @@
 
 declare(strict_types=1);
 namespace Hyperf\Apihelper\Annotation;
+
 use Hyperf\HttpServer\Annotation\Mapping;
 
 class Methods extends Mapping {
@@ -57,9 +58,5 @@ class Methods extends Mapping {
             }
         }
     }
-
-
-
-
 
 }

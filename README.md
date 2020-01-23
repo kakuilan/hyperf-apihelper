@@ -5,6 +5,7 @@ hyperf api and swagger helper.
 - 通过注解定义接口路由、请求方法和参数,并由中间件自动校验接口参数.
 - 生成json文件,供swagger接口文档测试使用,可打开或关闭.
 - swagger支持接口多版本分组管理.
+- 支持restful path路由参数校验
 
 
 ### 图例
@@ -54,6 +55,14 @@ return [
     ],
 ];
 ```
+- 修改config/autoload/dependencies.php依赖配置,如
+```php
+return [
+    'dependencies' => [
+        Hyperf\HttpServer\Router\DispatcherFactory::class => Hyperf\Apihelper\DispathcerFactory::class
+    ],
+];
+```
 
 
 ### 使用
@@ -66,11 +75,13 @@ use Hyperf\Apihelper\Annotation\ApiResponse;
 use Hyperf\Apihelper\Annotation\ApiVersion;
 use Hyperf\Apihelper\Annotation\Method\Delete;
 use Hyperf\Apihelper\Annotation\Method\Get;
+use Hyperf\Apihelper\Annotation\Method\Patch;
 use Hyperf\Apihelper\Annotation\Method\Post;
 use Hyperf\Apihelper\Annotation\Method\Put;
 use Hyperf\Apihelper\Annotation\Param\Body;
 use Hyperf\Apihelper\Annotation\Param\Form;
 use Hyperf\Apihelper\Annotation\Param\Header;
+use Hyperf\Apihelper\Annotation\Param\Path;
 use Hyperf\Apihelper\Annotation\Param\Query;
 use Hyperf\Validation\Validator;
 
@@ -95,6 +106,19 @@ class Test extends AbstractController {
     }
 
 
+    /**
+     * @Patch(path="/info/{id}", description="路由参数测试")
+     * @Path(key="id", rule="int|gt:0")
+     * @ApiResponse(code=200, schema={"$ref":"Response"})
+     */
+    public function info() {
+        $data = [
+            'id' => $this->request->route('id')
+        ];
+        return ApiResponse::doSuccess($data);
+    }
+    
+    
     /**
      * 检查输入字段
      * @param mixed $value 字段值
@@ -136,22 +160,25 @@ class Test extends AbstractController {
     - cnmobile,检查是否中国手机号
     - enum,检查参数值是否枚举值中的一个
     
-  - 控制器验证方法.若需要在控制器中执行比较复杂的逻辑去验证,则可以使用该方式.  
+  - 控制器验证方法.  
+  若需要在控制器中执行比较复杂的逻辑去验证,则可以使用该方式.  
   如上例中的cb_chkHello,规则名以cb_开头,后跟控制器的方法名chkHello.  
   验证方法必须定义接受3个参数:$value, $field, $options;  
-  返回结果必须是一个数组:若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.
+  返回结果必须是一个数组:  
+  若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.
   
 
 ### 响应体结构
 
 - 接口操作成功,返回{"status":true,"msg":"success","code":200,"data":[]}
 - 接口操作失败,返回{"status":false,"msg":"fail","code":400,"data":[]}
-- 自定义你自己的响应体结构,可参考ApiValidationMiddleware和ValidationExceptionHandler,重写你自己的中间件和异常处理.
+- 自定义响应体结构,可参考ApiValidationMiddleware和ValidationExceptionHandler,重写你自己的中间件和异常处理.
+- 自定义响应错误码code,可参考languages/zh_CN/apihelper.php
 
 
 ### swagger生成
 
-1.  api请求方法定义 `Get`, `Post`, `Put`, `Delete`
+1.  api请求方法定义 `Get`, `Post`, `Put`, `Patch`, `Delete`
 2.  参数定义 `Header`, `Query`, `Form`, `Body`, `Path`
 3.  返回结果定义 `ApiResponse` ,json串,如{"status":true,"msg":"success","code":200,"data":[]}
 4.  ApiVersion接口版本分组并不影响方法里面的实际绑定路由;它只是把控制器里面的接口,归入到某个swagger文件,以便查看.
@@ -160,6 +187,6 @@ class Test extends AbstractController {
 ## TODO
 - 多层级参数/body参数的校验
 - swagger更多属性的支持
-- restful 路径中的路由参数处理
+
 
 

@@ -10,18 +10,13 @@
 declare(strict_types=1);
 namespace Hyperf\Apihelper;
 
-use Hyperf\HttpServer\Annotation\DeleteMapping;
-use Hyperf\HttpServer\Annotation\GetMapping;
-use Hyperf\HttpServer\Annotation\Mapping;
-use Hyperf\HttpServer\Annotation\PatchMapping;
-use Hyperf\HttpServer\Annotation\PostMapping;
-use Hyperf\HttpServer\Annotation\PutMapping;
-use Hyperf\HttpServer\Annotation\RequestMapping;
-use Hyperf\HttpServer\MiddlewareManager;
-use Hyperf\HttpServer\Router\DispatcherFactory;
-use Hyperf\HttpServer\Annotation\Controller;
+use Doctrine\Common\Annotations\AnnotationException;
 use Hyperf\Apihelper\Annotation\ApiController;
 use Hyperf\Apihelper\Swagger\SwaggerJson;
+use Hyperf\Di\Exception\ConflictAnnotationException;
+use Hyperf\HttpServer\Annotation\Controller;
+use Hyperf\HttpServer\Annotation\Mapping;
+use Hyperf\HttpServer\Router\DispatcherFactory;
 
 class DispathcerFactory extends DispatcherFactory {
 
@@ -38,8 +33,13 @@ class DispathcerFactory extends DispatcherFactory {
 
 
     /**
-     * 1. 根据注解注册路由
-     * 2. 根据注解生成swagger文件
+     * 匹配处理控制器
+     * @param string $className
+     * @param Controller $annotation
+     * @param array $methodMetadata
+     * @param array $middlewares
+     * @throws AnnotationException
+     * @throws ConflictAnnotationException
      */
     protected function handleController(string $className, Controller $annotation, array $methodMetadata, array $middlewares = []): void {
         if (! $methodMetadata) {
@@ -68,13 +68,15 @@ class DispathcerFactory extends DispatcherFactory {
 
                 $path = $basePath . '/' . $methodName;
                 if ($mapping->path) {
-                    $justId = preg_match('/{.*}/', $mapping->path);
+                    //仅仅是路由参数,如 {id}
+                    $justId = preg_match('/^{.*}$/', $mapping->path);
                     if ($justId) {
                         $path = $basePath . '/' . $mapping->path;
                     } else {
                         $path = $mapping->path;
                     }
                 }
+
                 $router->addRoute($mapping->methods, $path, [$className, $methodName], [
                     'middleware' => $methodMiddlewares,
                 ]);
@@ -84,6 +86,12 @@ class DispathcerFactory extends DispatcherFactory {
     }
 
 
+    /**
+     * 初始化注解路由
+     * @param array $collector
+     * @throws AnnotationException
+     * @throws ConflictAnnotationException
+     */
     protected function initAnnotationRoute(array $collector): void {
         foreach ($collector as $className => $metadata) {
             if (isset($metadata['_c'][ApiController::class])) {
@@ -91,6 +99,7 @@ class DispathcerFactory extends DispatcherFactory {
                 $this->handleController($className, $metadata['_c'][ApiController::class], $metadata['_m'] ?? [], $middlewares);
             }
         }
+
         $this->swagger->save();
     }
 

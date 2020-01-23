@@ -10,20 +10,23 @@
 declare(strict_types=1);
 namespace Hyperf\Apihelper\Middleware;
 
+use Doctrine\Common\Annotations\AnnotationException;
 use FastRoute\Dispatcher;
 use Hyperf\Apihelper\Annotation\ApiResponse;
 use Hyperf\Apihelper\Annotation\Param\Body;
 use Hyperf\Apihelper\Annotation\Param\Form;
 use Hyperf\Apihelper\Annotation\Param\Header;
+use Hyperf\Apihelper\Annotation\Param\Path;
 use Hyperf\Apihelper\Annotation\Param\Query;
 use Hyperf\Apihelper\ApiAnnotation;
+use Hyperf\Apihelper\Validation\Validation;
+use Hyperf\Apihelper\Validation\ValidationInterface;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\HttpMessage\Stream\SwooleStream;
 use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
 use Hyperf\HttpServer\CoreMiddleware;
 use Hyperf\HttpServer\Router\Handler;
-use Hyperf\Logger\LoggerFactory;
 use Hyperf\Utils\Context;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -45,7 +48,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
 
     /**
      * @Inject()
-     * @var \Hyperf\Apihelper\Validation\ValidationInterface
+     * @var ValidationInterface
      */
     protected $validation;
 
@@ -64,7 +67,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
      * @param ServerRequestInterface $request
      * @param RequestHandlerInterface $handler
      * @return ResponseInterface
-     * @throws \Doctrine\Common\Annotations\AnnotationException
+     * @throws AnnotationException
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
         $uri = $request->getUri();
@@ -85,6 +88,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
         $controllerInstance = $this->container->get($controller);
         $annotations = ApiAnnotation::methodMetadata($controller, $action);
         $headerRules = [];
+        $pathRules = [];
         $queryRules = [];
         $bodyRules = [];
         $formRules = [];
@@ -92,6 +96,9 @@ class ApiValidationMiddleware extends CoreMiddleware {
         foreach ($annotations as $annotation) {
             if ($annotation instanceof Header) {
                 $headerRules[$annotation->key] = $annotation->rule;
+            }
+            if ($annotation instanceof Path) {
+                $pathRules[$annotation->key] = $annotation->rule;
             }
             if ($annotation instanceof Query) {
                 $queryRules[$annotation->key] = $annotation->rule;
@@ -110,6 +117,14 @@ class ApiValidationMiddleware extends CoreMiddleware {
                 return $item[0];
             }, $headers);
             [$data, $error] = $this->check($headerRules, $headers, $controllerInstance);
+            if ($data === false) {
+                return $this->response->json(ApiResponse::doFail([400, $error]));
+            }
+        }
+
+        if ($pathRules) {
+            $pathData = $routes[2] ?? [];
+            [$data, $error] = $this->check($pathRules, $pathData, $controllerInstance);
             if ($data === false) {
                 return $this->response->json(ApiResponse::doFail([400, $error]));
             }

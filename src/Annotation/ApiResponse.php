@@ -97,7 +97,7 @@ class ApiResponse extends AbstractAnnotation {
             $msg = end($code);
             $code = reset($code);
         }else{
-            $msg = 'fail';
+            $msg = trans("apihelper.{$code}", $trans);
         }
 
         $codeNo = ($code!=$msg && is_numeric($code)) ? intval($code) : 400;

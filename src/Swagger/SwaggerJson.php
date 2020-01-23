@@ -17,7 +17,6 @@ use Lkk\Helpers\UrlHelper;
 use Lkk\Helpers\ValidateHelper;
 use Hyperf\Apihelper\Annotation\ApiResponse;
 use Hyperf\Apihelper\Annotation\Param\Body;
-use Hyperf\Apihelper\Annotation\Param\Path;
 use Hyperf\Apihelper\Annotation\Params;
 use Hyperf\Apihelper\ApiAnnotation;
 use Hyperf\Contract\ConfigInterface;
@@ -107,8 +106,8 @@ class SwaggerJson {
         $path = $basePath . '/' . $methodName;
         //若注解中有路径信息
         if ($mapping->path) {
-            // 仅是路由参数,如 {id}
-            $justId = preg_match('/{.*}/', $mapping->path);
+            //仅仅是路由参数,如 {id}
+            $justId = preg_match('/^{.*}$/', $mapping->path);
             if ($justId) {
                 $path = $basePath . '/' . $mapping->path;
             } else {
@@ -329,11 +328,6 @@ class SwaggerJson {
 
                 $this->confSwagger['definitions'][$modelName] = $schema;
                 $parameters[$item->name]['schema']['$ref'] = '#/definitions/' . $modelName;
-            }
-
-            //TODO 处理 path 参数
-            if ($item instanceof Path) {
-
             }
         }
 
