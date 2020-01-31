@@ -49,6 +49,8 @@ abstract class BaseController {
     public function initialization(ServerRequestInterface $request): ServerRequestInterface {
         //自定义处理逻辑,如 将数据存储到$request属性中
         //$request = $request->withAttribute('test', 'hello world');
+        //在动作里面获取数据
+        //$test = $request->getAttribute('test');
 
         return $request;
     }
