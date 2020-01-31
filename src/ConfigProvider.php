@@ -23,9 +23,9 @@ class ConfigProvider {
             'publish' => [
                 [
                     'id' => 'swagger config',
-                    'description' => 'The config for swagger.',
-                    'source' => __DIR__ . '/../publish/swagger.php', //源文件
-                    'destination' => BASE_PATH . '/config/autoload/swagger.php', //目标路径
+                    'description' => 'The config for apihelper.',
+                    'source' => __DIR__ . '/../publish/apihelper.php', //源文件
+                    'destination' => BASE_PATH . '/config/autoload/apihelper.php', //目标路径
                 ],
                 [
                     'id' => 'validation en trans',

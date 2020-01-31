@@ -8,6 +8,7 @@
  */
 
 declare(strict_types=1);
+
 namespace Hyperf\Apihelper\Exception;
 
 use Exception;

@@ -8,6 +8,7 @@
  */
 
 declare(strict_types=1);
+
 namespace Hyperf\Apihelper;
 
 use Doctrine\Common\Annotations\AnnotationException;
@@ -42,12 +43,12 @@ class DispathcerFactory extends DispatcherFactory {
      * @throws ConflictAnnotationException
      */
     protected function handleController(string $className, Controller $annotation, array $methodMetadata, array $middlewares = []): void {
-        if (! $methodMetadata) {
+        if (!$methodMetadata) {
             return;
         }
 
-        $prefix = $this->getPrefix($className, $annotation->prefix);
-        $router = $this->getRouter($annotation->server);
+        $prefix   = $this->getPrefix($className, $annotation->prefix);
+        $router   = $this->getRouter($annotation->server);
         $basePath = ApiAnnotation::basePath($className);
 
         foreach ($methodMetadata as $methodName => $values) {
@@ -59,7 +60,7 @@ class DispathcerFactory extends DispatcherFactory {
             }
 
             foreach ($values as $mapping) {
-                if (!($mapping instanceof  Mapping)) {
+                if (!($mapping instanceof Mapping)) {
                     continue;
                 }
                 if (!isset($mapping->methods)) {
@@ -77,9 +78,7 @@ class DispathcerFactory extends DispatcherFactory {
                     }
                 }
 
-                $router->addRoute($mapping->methods, $path, [$className, $methodName], [
-                    'middleware' => $methodMiddlewares,
-                ]);
+                $router->addRoute($mapping->methods, $path, [$className, $methodName], ['middleware' => $methodMiddlewares,]);
                 $this->swagger->addPath($className, $methodName);
             }
         }
@@ -102,7 +101,6 @@ class DispathcerFactory extends DispatcherFactory {
 
         $this->swagger->save();
     }
-
 
 
 }

@@ -8,6 +8,7 @@
  */
 
 declare(strict_types=1);
+
 namespace Hyperf\Apihelper;
 
 use Doctrine\Common\Annotations\AnnotationReader;
@@ -48,8 +49,8 @@ class ApiAnnotation {
      * @throws AnnotationException
      */
     public static function methodMetadata($className, $methodName) {
-        $reflectMethod = ReflectionManager::reflectMethod($className, $methodName);
-        $reader = new AnnotationReader();
+        $reflectMethod     = ReflectionManager::reflectMethod($className, $methodName);
+        $reader            = new AnnotationReader();
         $methodAnnotations = $reader->getMethodAnnotations($reflectMethod);
         return $methodAnnotations;
     }

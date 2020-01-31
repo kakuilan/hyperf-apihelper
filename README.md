@@ -6,6 +6,7 @@ hyperf api and swagger helper.
 - 生成json文件,供swagger接口文档测试使用,可打开或关闭.
 - swagger支持接口多版本分组管理.
 - 支持restful path路由参数校验
+- 自定义前置动作
 
 
 ### 图例
@@ -35,7 +36,7 @@ php bin/hyperf.php vendor:publish kakuilan/hyperf-apihelper
 
 
 ### 配置
-- 修改config/autoload/swagger.php中的配置,将host改为你的域名,如test.com,则接口文档地址为test.com/swagger
+- 修改config/autoload/apihelper.php中的配置,将host改为你的域名,如test.com,则接口文档地址为test.com/swagger
 - 修改config/autoload/middlewares.php中间件配置,如
 ```php
 return [
@@ -83,13 +84,15 @@ use Hyperf\Apihelper\Annotation\Param\Form;
 use Hyperf\Apihelper\Annotation\Param\Header;
 use Hyperf\Apihelper\Annotation\Param\Path;
 use Hyperf\Apihelper\Annotation\Param\Query;
+use Hyperf\Apihelper\BaseController;
 use Hyperf\Validation\Validator;
+
 
 /**
  * @ApiController(tag="测试实例", description="测试例子")
  * @ApiVersion(group="v1", description="第一版本")
  */
-class Test extends AbstractController {
+class Test extends BaseController {
 
     /**
      * @Get(path="/user", description="获取用户详情")
@@ -175,6 +178,18 @@ class Test extends AbstractController {
 - 自定义响应体结构,可参考ApiValidationMiddleware和ValidationExceptionHandler,重写你自己的中间件和异常处理.
 - 自定义响应错误码code,可参考languages/zh_CN/apihelper.php
 
+### 自定义前置动作  
+可以自定义控制器前置方法,每次在具体动作之前执行.  
+该功能主要是将自定义的数据存储到request属性中,每次请求后销毁,避免控制器协程间的数据混淆.  
+该方法必须严格定义，形如:  
+```php
+public function initialization(ServerRequestInterface $request): ServerRequestInterface
+```
+方法名可以在config/autoload/apihelper.php中的controller_antecedent中指定,默认为initialization  
+具体可以参考src/BaseController.php
+
+
+
 
 ### swagger生成
 
@@ -185,8 +200,9 @@ class Test extends AbstractController {
 5.  生产环境请将配置output_json修改为false,关闭swagger.
 
 ## TODO
-- 多层级参数/body参数的校验
 - swagger更多属性的支持
+- 多层级参数/body参数的校验
+- upload数据校验
 
 
 

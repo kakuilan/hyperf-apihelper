@@ -8,6 +8,7 @@
  */
 
 declare(strict_types=1);
+
 namespace Hyperf\Apihelper\Swagger;
 
 use Lkk\Helpers\ArrayHelper;
@@ -50,8 +51,8 @@ class SwaggerJson {
 
 
     public function __construct() {
-        $this->confGlobal = ApplicationContext::getContainer()->get(ConfigInterface::class);
-        $this->confSwagger = $this->confGlobal->get('swagger');
+        $this->confGlobal  = ApplicationContext::getContainer()->get(ConfigInterface::class);
+        $this->confSwagger = $this->confGlobal->get('apihelper.swagger');
     }
 
 
@@ -63,18 +64,18 @@ class SwaggerJson {
      */
     public function addPath($className, $methodName) {
         //获取类文件的注解信息
-        $classAnnotation = ApiAnnotation::classMetadata($className);
-        $methodAnnotations = ApiAnnotation::methodMetadata($className, $methodName);
+        $classAnnotation    = ApiAnnotation::classMetadata($className);
+        $methodAnnotations  = ApiAnnotation::methodMetadata($className, $methodName);
         $versionAnnotations = ApiAnnotation::versionMetadata($className);
 
-        $params = [];
+        $params    = [];
         $responses = [];
-        $paths = [];
+        $paths     = [];
 
         $hasVersion = is_object($versionAnnotations) && !empty($versionAnnotations->group) && is_string($versionAnnotations->group);
         //检查版本号是否合法
-        if($hasVersion) {
-            if (!preg_match("/^(?!_)[a-zA-Z0-9_]+$/u", $versionAnnotations->group) ) {
+        if ($hasVersion) {
+            if (!preg_match("/^(?!_)[a-zA-Z0-9_]+$/u", $versionAnnotations->group)) {
                 throw new RuntimeException('Version group name can only be in english, numerals, and underscores');
             }
         }
@@ -96,14 +97,11 @@ class SwaggerJson {
             }
         }
 
-        $tag = $classAnnotation->tag ?: $className;
-        $this->confSwagger['tags'][$tag] = [
-            'name' => $tag,
-            'description' => $classAnnotation->description,
-        ];
+        $tag                             = $classAnnotation->tag ?: $className;
+        $this->confSwagger['tags'][$tag] = ['name' => $tag, 'description' => $classAnnotation->description,];
 
         $basePath = ApiAnnotation::basePath($className);
-        $path = $basePath . '/' . $methodName;
+        $path     = $basePath . '/' . $methodName;
         //若注解中有路径信息
         if ($mapping->path) {
             //仅仅是路由参数,如 {id}
@@ -114,31 +112,15 @@ class SwaggerJson {
                 $path = $mapping->path;
             }
         }
-        $method = strtolower($mapping->methods[0]);
-        $paths[$path][$method] = [
-            'tags' => [
-                $tag,
-            ],
-            'summary' => $mapping->summary,
-            'parameters' => $this->makeParameters($params, $path),
-            //接口默认接收的MIME类型
-            'consumes' => [
-                'application/x-www-form-urlencoded',
-                'application/json',
-                'multipart/form-data',
-            ],
-            //接口默认的回复类型
-            'produces' => [
-                'application/json',
-            ],
-            'responses' => $this->makeResponses($responses, $path, $method),
-            'description' => $mapping->description,
-        ];
+        $method                = strtolower($mapping->methods[0]);
+        $paths[$path][$method] = ['tags'     => [$tag,], 'summary' => $mapping->summary, 'parameters' => $this->makeParameters($params, $path), //接口默认接收的MIME类型
+                                  'consumes' => ['application/x-www-form-urlencoded', 'application/json', 'multipart/form-data',], //接口默认的回复类型
+                                  'produces' => ['application/json',], 'responses' => $this->makeResponses($responses, $path, $method), 'description' => $mapping->description,];
 
-        if($hasVersion) {
+        if ($hasVersion) {
             $this->addGroupInfo($versionAnnotations->group, $versionAnnotations->description, $paths);
-        }else{
-            $this->confSwagger['paths'] = array_merge(($this->confSwagger['paths'] ??[]), $paths);
+        } else {
+            $this->confSwagger['paths'] = array_merge(($this->confSwagger['paths'] ?? []), $paths);
         }
     }
 
@@ -149,71 +131,34 @@ class SwaggerJson {
      * @param string $desc
      * @param array $paths
      */
-    protected function addGroupInfo(string $name, string $desc, array $paths=[]) {
-        if(empty($name)) return;
+    protected function addGroupInfo(string $name, string $desc, array $paths = []) {
+        if (empty($name))
+            return;
 
-        if(!isset($this->groups[$name])) {
-            $this->groups[$name] = [
-                'name' => $name,
-                'description' => $desc,
-                'paths' => [],
-            ];
+        if (!isset($this->groups[$name])) {
+            $this->groups[$name] = ['name' => $name, 'description' => $desc, 'paths' => [],];
         }
 
-        if(!empty($desc)) $this->groups[$name]['description'] = $desc;
+        if (!empty($desc))
+            $this->groups[$name]['description'] = $desc;
 
-        if(!empty($paths)) $this->groups[$name]['paths'] = array_merge($this->groups[$name]['paths'], $paths);
+        if (!empty($paths))
+            $this->groups[$name]['paths'] = array_merge($this->groups[$name]['paths'], $paths);
 
     }
-
-
 
 
     /**
      * 初始化常用模型定义
      */
     public function initDefinitions() {
-        $response = [
-            'type' => 'object',
-            'required' => [],
-            'properties' => [
-                'status' => [
-                    'type' => 'boolean',
-                    'example' => true,
-                ],
-                'msg' => [
-                    'type' => 'string',
-                    'example' => 'success',
-                ],
-                'code' => [
-                    'type' => 'integer',
-                    'format' => 'int64',
-                    'example' => 200,
-                ],
-                'data' => [
-                    'type' => 'array',
-                    'example' => [],
-                ],
-            ],
-        ];
+        $response = ['type' => 'object', 'required' => [], 'properties' => ['status' => ['type' => 'boolean', 'example' => true,], 'msg' => ['type' => 'string', 'example' => 'success',], 'code' => ['type' => 'integer', 'format' => 'int64', 'example' => 200,], 'data' => ['type' => 'array', 'example' => [],],],];
 
-        $arraySchema = [
-            'type' => 'array',
-            'required' => [],
-            'items' => [
-                'type' => 'string'
-            ],
-        ];
-        $objectSchema = [
-            'type' => 'object',
-            'required' => [],
-            'items' => [
-                'type' => 'string'
-            ],
-        ];
+        $arraySchema  = ['type' => 'array', 'required' => [], 'items' => ['type' => 'string'],];
+        $objectSchema = ['type' => 'object', 'required' => [], 'items' => ['type' => 'string'],];
 
-        $this->confSwagger['definitions']['Response'] = $response;
-        $this->confSwagger['definitions']['ModelArray'] = $arraySchema;
+        $this->confSwagger['definitions']['Response']    = $response;
+        $this->confSwagger['definitions']['ModelArray']  = $arraySchema;
         $this->confSwagger['definitions']['ModelObject'] = $objectSchema;
     }
 
@@ -223,16 +168,12 @@ class SwaggerJson {
      * @param array $rules
      * @return array
      */
-    public function rules2schema(array $rules):array {
-        $schema = [
-            'type' => 'object',
-            'required' => [],
-            'properties' => [],
-        ];
+    public function rules2schema(array $rules): array {
+        $schema = ['type' => 'object', 'required' => [], 'properties' => [],];
 
         foreach ($rules as $field => $rule) {
-            $property = [];
-            $fileInfo = explode('|', $field);
+            $property  = [];
+            $fileInfo  = explode('|', $field);
             $fieldName = $fileInfo[0];
             if (!is_array($rule)) {
                 $type = $this->getTypeByRule($rule);
@@ -243,12 +184,12 @@ class SwaggerJson {
 
             if ($type == 'array') {
                 $property['$ref'] = '#/definitions/ModelArray';;
-            }elseif ($type == 'object') {
+            } elseif ($type == 'object') {
                 $property['$ref'] = '#/definitions/ModelObject';;
             }
 
-            $property['type'] = $type;
-            $property['description'] = $fileInfo[1] ?? '';
+            $property['type']                 = $type;
+            $property['description']          = $fileInfo[1] ?? '';
             $schema['properties'][$fieldName] = $property;
         }
 
@@ -263,30 +204,30 @@ class SwaggerJson {
      */
     public function getTypeByRule(string $rule) {
         $details = explode('|', $rule);
-        $digItem = ArrayHelper::dstrpos($rule, ['gt','gte','lt','lte','max','min','numeric'], true);
+        $digItem = ArrayHelper::dstrpos($rule, ['gt', 'gte', 'lt', 'lte', 'max', 'min', 'numeric'], true);
 
         if (array_intersect($details, ['integer', 'int'])) {
             return 'integer';
-        }elseif (array_intersect($details, ['float'])) {
+        } elseif (array_intersect($details, ['float'])) {
             return 'float';
-        }elseif (array_intersect($details, ['boolean', 'bool'])) {
+        } elseif (array_intersect($details, ['boolean', 'bool'])) {
             return 'boolean';
-        }elseif (array_intersect($details, ['array'])) {
+        } elseif (array_intersect($details, ['array'])) {
             return 'array';
-        }elseif (array_intersect($details, ['object'])) {
+        } elseif (array_intersect($details, ['object'])) {
             return 'object';
-        }elseif ($digItem) {
+        } elseif ($digItem) {
             foreach ($details as $detail) {
-                if(strpos($detail, ':') && stripos($detail, $digItem) !==false) {
+                if (strpos($detail, ':') && stripos($detail, $digItem) !== false) {
                     //是否有规则选项,如 between:1,20 中的 :1,20
                     preg_match('/:(.*)/', $detail, $match);
                     $options = $match[1] ?? '';
-                    $arr = explode(',', $options);
-                    $first = $arr[0] ?? '';
+                    $arr     = explode(',', $options);
+                    $first   = $arr[0] ?? '';
 
                     if (ValidateHelper::isFloat($first)) {
                         return 'float';
-                    }elseif (ValidateHelper::isInteger($first)) {
+                    } elseif (ValidateHelper::isInteger($first)) {
                         return 'integer';
                     }
                 }
@@ -303,7 +244,7 @@ class SwaggerJson {
      * @param string $path
      * @return array
      */
-    public function makeParameters(array $params, string $path):array {
+    public function makeParameters(array $params, string $path): array {
         $this->initDefinitions();
 
         $path = self::turnPath($path);
@@ -312,13 +253,7 @@ class SwaggerJson {
 
         /** @var \Hyperf\Apihelper\Annotation\Params $item */
         foreach ($params as $item) {
-            $parameters[$item->name] = [
-                'in' => $item->in,
-                'name' => $item->name,
-                'description' => $item->description,
-                'required' => $item->required,
-                'type' => $item->type,
-            ];
+            $parameters[$item->name] = ['in' => $item->in, 'name' => $item->name, 'description' => $item->description, 'required' => $item->required, 'type' => $item->type,];
 
             //单独处理body参数
             if ($item instanceof Body) {
@@ -327,7 +262,7 @@ class SwaggerJson {
                 $schema = $this->rules2schema($item->rules);
 
                 $this->confSwagger['definitions'][$modelName] = $schema;
-                $parameters[$item->name]['schema']['$ref'] = '#/definitions/' . $modelName;
+                $parameters[$item->name]['schema']['$ref']    = '#/definitions/' . $modelName;
             }
         }
 
@@ -348,16 +283,14 @@ class SwaggerJson {
 
         /** @var ApiResponse $item */
         foreach ($responses as $item) {
-            $resp[$item->code] = [
-                'description' => $item->description,
-            ];
+            $resp[$item->code] = ['description' => $item->description,];
             if ($item->schema) {
                 //引用已定义的模型
-                if(is_array($item->schema) && array_key_exists('$ref', $item->schema) && array_key_exists($item->schema['$ref'], $this->confSwagger['definitions'])) {
+                if (is_array($item->schema) && array_key_exists('$ref', $item->schema) && array_key_exists($item->schema['$ref'], $this->confSwagger['definitions'])) {
                     $resp[$item->code]['schema']['$ref'] = '#/definitions/' . $item->schema['$ref'];
-                }else{
-                    $modelName = implode('', array_map('ucfirst', explode('/', $path))) . ucfirst($method) .'Response' . $item->code;
-                    $ret = $this->responseSchemaTodefinition($item->schema, $modelName);
+                } else {
+                    $modelName = implode('', array_map('ucfirst', explode('/', $path))) . ucfirst($method) . 'Response' . $item->code;
+                    $ret       = $this->responseSchemaTodefinition($item->schema, $modelName);
                     if ($ret) {
                         $resp[$item->code]['schema']['$ref'] = '#/definitions/' . $modelName;
                     }
@@ -382,23 +315,23 @@ class SwaggerJson {
         }
         $definition = [];
         foreach ($schema as $key => $val) {
-            $_key = str_replace('_', '', $key);
-            $property = [];
+            $_key             = str_replace('_', '', $key);
+            $property         = [];
             $property['type'] = gettype($val);
             if (is_array($val)) {
                 $definitionName = $modelName . ucfirst($_key);
                 if ($property['type'] == 'array' && isset($val[0])) {
                     if (is_array($val[0])) {
-                        $property['type'] = 'array';
-                        $ret = $this->responseSchemaTodefinition($val[0], $definitionName, 1);
+                        $property['type']          = 'array';
+                        $ret                       = $this->responseSchemaTodefinition($val[0], $definitionName, 1);
                         $property['items']['$ref'] = '#/definitions/' . $definitionName;
                     } else {
-                        $property['type'] = 'array';
+                        $property['type']          = 'array';
                         $property['items']['type'] = gettype($val[0]);
                     }
                 } else {
                     $property['type'] = 'object';
-                    $ret = $this->responseSchemaTodefinition($val, $definitionName, 1);
+                    $ret              = $this->responseSchemaTodefinition($val, $definitionName, 1);
                     $property['$ref'] = '#/definitions/' . $definitionName;
                 }
                 if (isset($ret)) {
@@ -423,7 +356,7 @@ class SwaggerJson {
      * @param string $path
      * @return string
      */
-    public static function turnPath(string $path):string {
+    public static function turnPath(string $path): string {
         $path = str_replace(['{', '}'], '', $path);
         return $path;
     }
@@ -435,35 +368,33 @@ class SwaggerJson {
     public function save() {
         $this->confSwagger['tags'] = array_unique(array_values($this->confSwagger['tags'] ?? []), SORT_REGULAR);
 
-        $saveDir = DirectoryHelper::formatDir($this->confSwagger['output_dir']);
-        $baseName = $this->confSwagger['output_basename'] ?? 'swagger';
+        $saveDir     = DirectoryHelper::formatDir($this->confSwagger['output_dir']);
+        $baseName    = $this->confSwagger['output_basename'] ?? 'swagger';
         $openSwagger = boolval($this->confSwagger['output_json']);
 
         $swaggerDir = str_replace(DirectoryHelper::formatDir(BASE_PATH . '/public'), '', $saveDir);
         $swaggerDir = rtrim($swaggerDir, '/');
 
-        if(empty($saveDir)) return;
+        if (empty($saveDir))
+            return;
         unset($this->confSwagger['output_json'], $this->confSwagger['output_dir'], $this->confSwagger['output_basename']);
 
         //是否开启swagger文档功能
-        if($openSwagger) {
-            $http = $this->confSwagger['schemes'][0] ?? 'http';
-            $siteUrl = UrlHelper::formatUrl(strtolower("{$http}://". $this->confSwagger['host']));
-            $urls = [];
+        if ($openSwagger) {
+            $http    = $this->confSwagger['schemes'][0] ?? 'http';
+            $siteUrl = UrlHelper::formatUrl(strtolower("{$http}://" . $this->confSwagger['host']));
+            $urls    = [];
 
             $swaggerAll = $this->confSwagger; //包含全部版本
 
             // 生成版本分组文件
             foreach ($this->groups as $group) {
-                $swaggerData = $this->confSwagger;
-                $swaggerData['paths'] = array_merge(($swaggerData['paths'] ??[]), $group['paths']);
-                $swaggerAll['paths'] = array_merge(($swaggerAll['paths'] ??[]), $group['paths']);
+                $swaggerData          = $this->confSwagger;
+                $swaggerData['paths'] = array_merge(($swaggerData['paths'] ?? []), $group['paths']);
+                $swaggerAll['paths']  = array_merge(($swaggerAll['paths'] ?? []), $group['paths']);
 
                 $versionFile = "{$baseName}-{$group['name']}.json";
-                array_push($urls, [
-                    'url' => "{$siteUrl}/{$swaggerDir}/{$versionFile}",
-                    'name' => "{$group['name']} -- {$group['description']}"
-                ]);
+                array_push($urls, ['url' => "{$siteUrl}/{$swaggerDir}/{$versionFile}", 'name' => "{$group['name']} -- {$group['description']}"]);
 
                 $filePath = $saveDir . $versionFile;
                 file_put_contents($filePath, json_encode($swaggerData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
@@ -471,27 +402,24 @@ class SwaggerJson {
 
             // 全部版本的接口
             $baseName .= ".json";
-            array_unshift($urls, [
-                'url' => "{$siteUrl}/{$swaggerDir}/{$baseName}",
-                'name' => "all version apis"
-            ]);
+            array_unshift($urls, ['url' => "{$siteUrl}/{$swaggerDir}/{$baseName}", 'name' => "all version apis"]);
             $filePath = $saveDir . $baseName;
             file_put_contents($filePath, json_encode($swaggerAll, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
             // 修改index.html
             $htmlFile = $saveDir . 'index.html';
-            $content = file_get_contents($htmlFile);
-            $urlStr = json_encode($urls, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-            $urlStr = "urls:" . str_replace("\\/", "/",  $urlStr);
-            $content = preg_replace("/urls:\[.*\]/is", $urlStr, $content, -1);
+            $content  = file_get_contents($htmlFile);
+            $urlStr   = json_encode($urls, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            $urlStr   = "urls:" . str_replace("\\/", "/", $urlStr);
+            $content  = preg_replace("/urls:\[.*\]/is", $urlStr, $content, -1);
             file_put_contents($htmlFile, $content);
 
-        }else{
+        } else {
             // 删除 *.json文件
             $fileList = DirectoryHelper::getFileTree(BASE_PATH . '/public/swagger/', 'file');
             foreach ($fileList as $item) {
                 $ext = FileHelper::getFileExt($item);
-                if ($ext=='json') {
+                if ($ext == 'json') {
                     @unlink($item);
                 }
             }

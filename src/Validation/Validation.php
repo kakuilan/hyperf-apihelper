@@ -8,6 +8,7 @@
  */
 
 declare(strict_types=1);
+
 namespace Hyperf\Apihelper\Validation;
 
 use Hyperf\Apihelper\Exception\ValidationException;
@@ -59,15 +60,15 @@ class Validation implements ValidationInterface {
      */
     public function check(array $rules, array $data, object $obj = null, string $keyTree = null) {
         $this->errors = [];
-        $this->data = [];
+        $this->data   = [];
 
-        $realRules = []; //hyperf本身的验证器规则
+        $realRules   = []; //hyperf本身的验证器规则
         $customRules = []; //本组件的扩展验证规则
-        $finalData = $data;
+        $finalData   = $data;
 
         foreach ($rules as $field => $rule) {
             $fieldName = self::getFieldByKey($field);
-            $tree = $keyTree ? $keyTree . '.' . $fieldName : $fieldName;
+            $tree      = $keyTree ? $keyTree . '.' . $fieldName : $fieldName;
 
             //嵌套规则数组
             if (is_array($rule)) {
@@ -81,18 +82,18 @@ class Validation implements ValidationInterface {
 
             $detailRules = explode('|', $rule);
             $detailRules = self::sortRules($detailRules);
-            $arr1 = $arr2 = [];
+            $arr1        = $arr2 = [];
             foreach ($detailRules as $detailRule) {
                 $ruleName = self::parseRuleName($detailRule);
 
                 //是否本组件的转换器
-                $convMethod = 'conver_'. $ruleName;
+                $convMethod = 'conver_' . $ruleName;
                 if (method_exists($this, $convMethod)) {
                     array_push($arr1, $detailRule);
                 }
 
                 //是否本组件的验证规则
-                $ruleMethod = 'rule_'. $ruleName;
+                $ruleMethod = 'rule_' . $ruleName;
                 if (method_exists($this, $ruleMethod)) {
                     array_push($arr1, $detailRule);
                 }
@@ -105,17 +106,17 @@ class Validation implements ValidationInterface {
                 }
 
                 //是否hyperf验证规则
-                $hyperfMethod = 'validate'. self::toCamelName($ruleName);
+                $hyperfMethod = 'validate' . self::toCamelName($ruleName);
                 if (method_exists(ValidatesAttributes::class, $hyperfMethod)) {
                     array_push($arr2, $detailRule);
-                }elseif (!in_array($detailRule, $arr1)) { //非hyperf规则,且非本组件规则
-                    $msg = $this->translator->trans('apihelper.rule_not_defined', ['rule'=> $detailRule]);
+                } elseif (!in_array($detailRule, $arr1)) { //非hyperf规则,且非本组件规则
+                    $msg = $this->translator->trans('apihelper.rule_not_defined', ['rule' => $detailRule]);
                     throw new ValidationException($msg);
                 }
             }
 
             $customRules[$fieldName] = implode('|', $arr1);
-            $realRules[$fieldName] = implode('|', $arr2);
+            $realRules[$fieldName]   = implode('|', $arr2);
         }
 
         //先执行hyperf的验证
@@ -123,32 +124,28 @@ class Validation implements ValidationInterface {
         $finalData = $validator->validate();
 
         //再执行自定义验证
-        foreach ($customRules as $field=>$customRule) {
-            if(empty($customRule)) continue;
+        foreach ($customRules as $field => $customRule) {
+            if (empty($customRule))
+                continue;
 
-            $fieldValue = $finalData[$field] ?? null;
+            $fieldValue  = $finalData[$field] ?? null;
             $detailRules = explode('|', $customRule);
             foreach ($detailRules as $detailRule) {
-                $ruleName = self::parseRuleName($detailRule);
+                $ruleName  = self::parseRuleName($detailRule);
                 $optionStr = explode(':', $detailRule)[1] ?? '';
-                $optionArr= explode(',', $optionStr);
+                $optionArr = explode(',', $optionStr);
 
-                $convMethod = 'conver_'. $ruleName;
+                $convMethod = 'conver_' . $ruleName;
                 if (method_exists($this, $convMethod)) {
-                    $fieldValue = call_user_func_array([
-                        $this,
-                        $convMethod,
-                    ], [$fieldValue]);
+                    $fieldValue = call_user_func_array([$this, $convMethod,], [$fieldValue]);
 
                 }
 
-                $ruleMethod = 'rule_'. $ruleName;
+                $ruleMethod = 'rule_' . $ruleName;
                 if (method_exists($this, $ruleMethod)) {
-                    $check = call_user_func_array([
-                        $this,
-                        $ruleMethod,
-                    ], [$fieldValue, $field, $optionArr]);
-                    if(!$check) break;
+                    $check = call_user_func_array([$this, $ruleMethod,], [$fieldValue, $field, $optionArr]);
+                    if (!$check)
+                        break;
                 }
 
                 // cb_xxx,调用控制器的方法xxx
@@ -156,20 +153,17 @@ class Validation implements ValidationInterface {
                 // 返回结果是一个数组:若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.
                 $controllerMethod = str_replace('cb_', '', $ruleName);
                 if (strpos($ruleName, 'cb_') !== false && method_exists($obj, $controllerMethod)) {
-                    $chkRes = call_user_func_array([
-                        $obj,
-                        $controllerMethod,
-                    ], [$fieldValue, $field, $optionArr]);
+                    $chkRes = call_user_func_array([$obj, $controllerMethod,], [$fieldValue, $field, $optionArr]);
 
-                    if (!is_array($chkRes) || count($chkRes)!=2 || !is_bool($chkRes[0])) {
-                        $msg = $this->translator->trans('apihelper.rule_callback_error_result', ['rule'=> $controllerMethod]);
+                    if (!is_array($chkRes) || count($chkRes) != 2 || !is_bool($chkRes[0])) {
+                        $msg = $this->translator->trans('apihelper.rule_callback_error_result', ['rule' => $controllerMethod]);
                         throw new ValidationException($msg);
                     }
 
                     [$chk, $val] = $chkRes;
-                    if($chk!==true) {
+                    if ($chk !== true) {
                         $this->errors[] = strval($val);
-                    }elseif(!is_null($val)){
+                    } elseif (!is_null($val)) {
                         $fieldValue = $val;
                     }
                 }
@@ -191,7 +185,7 @@ class Validation implements ValidationInterface {
      * @param string $key
      * @return string
      */
-    public static function getFieldByKey(string $key):string {
+    public static function getFieldByKey(string $key): string {
         $arr = explode('|', $key);
         $res = $arr[0] ?? '';
         return $res;
@@ -203,7 +197,7 @@ class Validation implements ValidationInterface {
      * @param string $str
      * @return string
      */
-    public static function parseRuleName(string $str):string {
+    public static function parseRuleName(string $str): string {
         //过滤如gt[0] 或 enum[0,1]
         $res = preg_replace('/\[.*\]/', '', $str);
 
@@ -221,7 +215,7 @@ class Validation implements ValidationInterface {
      * @param string $str
      * @return string
      */
-    public static function toCamelName(string $str):string {
+    public static function toCamelName(string $str): string {
         $str = str_replace('_', ' ', $str);
         $str = ucwords($str);
         $str = str_replace(' ', '', $str);
@@ -234,21 +228,21 @@ class Validation implements ValidationInterface {
      * @param array $rules
      * @return array
      */
-    public static function sortRules(array $rules):array {
+    public static function sortRules(array $rules): array {
         $priorities = ['int', 'integer', 'bool', 'boolean', 'numeric', 'float', 'string'];
-        $res = [];
+        $res        = [];
 
         foreach ($rules as $rule) {
             $lowRule = strtolower($rule);
-            if(in_array($lowRule, $priorities)) {
-                if($lowRule=='int') {
+            if (in_array($lowRule, $priorities)) {
+                if ($lowRule == 'int') {
                     $rule = 'integer';
-                }elseif ($lowRule=='bool') {
+                } elseif ($lowRule == 'bool') {
                     $rule = 'boolean';
                 }
 
                 array_unshift($res, $rule);
-            }else{
+            } else {
                 array_push($res, $rule);
             }
         }
@@ -271,7 +265,7 @@ class Validation implements ValidationInterface {
      * @param $val
      * @return int
      */
-    public static function conver_int($val):int {
+    public static function conver_int($val): int {
         return intval($val);
     }
 
@@ -281,7 +275,7 @@ class Validation implements ValidationInterface {
      * @param $val
      * @return int
      */
-    public static function conver_integer($val):int {
+    public static function conver_integer($val): int {
         return intval($val);
     }
 
@@ -291,7 +285,7 @@ class Validation implements ValidationInterface {
      * @param $val
      * @return float
      */
-    public static function conver_float($val):float {
+    public static function conver_float($val): float {
         return floatval($val);
     }
 
@@ -301,21 +295,11 @@ class Validation implements ValidationInterface {
      * @param $val
      * @return bool
      */
-    public static function conver_boolean($val):bool {
-        if (empty($val)
-            || in_array(strtolower($val), [
-                'false',
-                'null',
-                'nil',
-                'none',
-                '0',
-            ])) {
+    public static function conver_boolean($val): bool {
+        if (empty($val) || in_array(strtolower($val), ['false', 'null', 'nil', 'none', '0',])) {
 
             return false;
-        }elseif (in_array(strtolower($val), [
-            'true',
-            '1',
-        ])) {
+        } elseif (in_array(strtolower($val), ['true', '1',])) {
             return true;
         }
 
@@ -328,7 +312,7 @@ class Validation implements ValidationInterface {
      * @param $val
      * @return bool
      */
-    public function conver_bool($val):bool {
+    public function conver_bool($val): bool {
         return self::conver_boolean($val);
     }
 
@@ -338,7 +322,7 @@ class Validation implements ValidationInterface {
      * @param $val
      * @return string
      */
-    public function conver_trim($val):string {
+    public function conver_trim($val): string {
         return trim(strval($val));
     }
 
@@ -350,12 +334,12 @@ class Validation implements ValidationInterface {
      * @param array $options
      * @return bool
      */
-    public function rule_safe_password($val, string $field, array $options=[]):bool {
+    public function rule_safe_password($val, string $field, array $options = []): bool {
         if ($val === '') {
             return true;
         }
         if (strlen($val) < 8) {
-            $this->errors[] = $this->translator->trans('apihelper.rule_safe_password_len', ['field'=> $field]);
+            $this->errors[] = $this->translator->trans('apihelper.rule_safe_password_len', ['field' => $field]);
             return false;
         }
         $level = 0;
@@ -372,7 +356,7 @@ class Validation implements ValidationInterface {
             $level++;
         }
         if ($level < 3) {
-            $this->errors[] = $this->translator->trans('apihelper.rule_safe_password_simple', ['field'=> $field]);
+            $this->errors[] = $this->translator->trans('apihelper.rule_safe_password_simple', ['field' => $field]);
             return false;
         }
 
@@ -387,12 +371,12 @@ class Validation implements ValidationInterface {
      * @param array $options
      * @return bool
      */
-    public function rule_natural($val, string $field, array $options=[]):bool {
+    public function rule_natural($val, string $field, array $options = []): bool {
         if ($val === '') {
             return true;
         }
         if (!preg_match('/^[0-9]+$/', $val)) {
-            $this->errors[] = $this->translator->trans('apihelper.rule_natural', ['field'=> $field]);
+            $this->errors[] = $this->translator->trans('apihelper.rule_natural', ['field' => $field]);
             return false;
         }
 
@@ -407,10 +391,10 @@ class Validation implements ValidationInterface {
      * @param array $options
      * @return bool
      */
-    public function rule_cnmobile($val, string $field, array $options=[]):bool {
+    public function rule_cnmobile($val, string $field, array $options = []): bool {
         $chk = ValidateHelper::isMobile($val);
-        if(!$chk) {
-            $this->errors[] = $this->translator->trans('apihelper.rule_cnmobile', ['field'=> $field]);
+        if (!$chk) {
+            $this->errors[] = $this->translator->trans('apihelper.rule_cnmobile', ['field' => $field]);
         }
 
         return boolval($chk);
@@ -424,21 +408,20 @@ class Validation implements ValidationInterface {
      * @param array $options
      * @return bool
      */
-    public function rule_enum($val, string $field, array $options=[]):bool {
-        if(empty($options)) {
+    public function rule_enum($val, string $field, array $options = []): bool {
+        if (empty($options)) {
             return true;
-        }elseif ($val==='') {
+        } elseif ($val === '') {
             return false;
         }
 
         if (!in_array($val, $options)) {
-            $this->errors[] = $this->translator->trans('apihelper.rule_enum', ['field'=> $field, 'values'=>implode(',', $options)]);
+            $this->errors[] = $this->translator->trans('apihelper.rule_enum', ['field' => $field, 'values' => implode(',', $options)]);
             return false;
         }
 
         return true;
     }
-
 
 
 }

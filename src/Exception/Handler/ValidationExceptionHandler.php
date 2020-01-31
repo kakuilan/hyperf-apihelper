@@ -8,6 +8,7 @@
  */
 
 declare(strict_types=1);
+
 namespace Hyperf\Apihelper\Exception\Handler;
 
 use Hyperf\Apihelper\Annotation\ApiResponse;
@@ -26,9 +27,9 @@ class ValidationExceptionHandler extends ExceptionHandler {
         if ($throwable instanceof HyperfValidationException) {
             $msg = $throwable->validator->errors()->first();
             $res = ApiResponse::doFail([400, $msg]);
-        }elseif ($throwable instanceof MyValidationException) {
+        } elseif ($throwable instanceof MyValidationException) {
             $res = ApiResponse::doFail([400, $throwable->getMessage()]);
-        }else{
+        } else {
             $res = ApiResponse::doFail([400, 'unknow error']);
         }
 

@@ -8,6 +8,7 @@
  */
 
 declare(strict_types=1);
+
 namespace Hyperf\Apihelper\Annotation\Method;
 
 use Hyperf\Apihelper\Annotation\Methods;
