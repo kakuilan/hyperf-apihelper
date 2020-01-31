@@ -12,7 +12,7 @@ use Psr\Http\Message\ServerRequestInterface;
 return [
     //api配置
     'api' => [
-        //控制器前置方法,每次先于具体动作之前执行,该方法必须仅接受一个ServerRequestInterface类型的参数
+        //控制器前置方法,每次先于具体动作之前执行,该方法必须仅接受一个ServerRequestInterface类型的参数,并返回
         //形如, fn(ServerRequestInterface $request):ServerRequestInterface
         'controller_antecedent' => 'initialization',
     ],

@@ -5,8 +5,8 @@ hyperf api and swagger helper.
 - 通过注解定义接口路由、请求方法和参数,并由中间件自动校验接口参数.
 - 生成json文件,供swagger接口文档测试使用,可打开或关闭.
 - swagger支持接口多版本分组管理.
-- 支持restful path路由参数校验
-- 自定义前置动作
+- 支持restful path路由参数校验.
+- 支持自定义前置动作.
 
 
 ### 图例
