@@ -22,7 +22,7 @@ class ConfigProvider {
             ],
             'publish' => [
                 [
-                    'id' => 'swagger config',
+                    'id' => 'apihelper config',
                     'description' => 'The config for apihelper.',
                     'source' => __DIR__ . '/../publish/apihelper.php', //源文件
                     'destination' => BASE_PATH . '/config/autoload/apihelper.php', //目标路径
