@@ -113,9 +113,15 @@ class SwaggerJson {
             }
         }
         $method                = strtolower($mapping->methods[0]);
-        $paths[$path][$method] = ['tags'     => [$tag,], 'summary' => $mapping->summary, 'parameters' => $this->makeParameters($params, $path), //接口默认接收的MIME类型
-                                  'consumes' => ['application/x-www-form-urlencoded', 'application/json', 'multipart/form-data',], //接口默认的回复类型
-                                  'produces' => ['application/json',], 'responses' => $this->makeResponses($responses, $path, $method), 'description' => $mapping->description,];
+        $paths[$path][$method] = [
+            'tags'     => [$tag,],
+            'summary' => $mapping->summary,
+            'parameters' => $this->makeParameters($params, $path), //接口默认接收的MIME类型
+            'consumes' => ['application/x-www-form-urlencoded', 'application/json', 'multipart/form-data',], //接口默认的回复类型
+            'produces' => ['application/json',],
+            'responses' => $this->makeResponses($responses, $path, $method),
+            'description' => $mapping->description,
+            ];
 
         if ($hasVersion) {
             $this->addGroupInfo($versionAnnotations->group, $versionAnnotations->description, $paths);
@@ -253,7 +259,17 @@ class SwaggerJson {
 
         /** @var \Hyperf\Apihelper\Annotation\Params $item */
         foreach ($params as $item) {
-            $parameters[$item->name] = ['in' => $item->in, 'name' => $item->name, 'description' => $item->description, 'required' => $item->required, 'type' => $item->type,];
+            $parameters[$item->name] = [
+                'in' => $item->in,
+                'name' => $item->name,
+                'description' => $item->description,
+                'required' => $item->required,
+                'type' => $item->type,
+                ];
+
+            if(!is_null($item->default)) $parameters[$item->name]['default']= $item->default;
+            if(!is_null($item->enum)) $parameters[$item->name]['enum']= $item->enum;
+
 
             //单独处理body参数
             if ($item instanceof Body) {

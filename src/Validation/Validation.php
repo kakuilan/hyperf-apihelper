@@ -131,14 +131,17 @@ class Validation implements ValidationInterface {
             $fieldValue  = $finalData[$field] ?? null;
             $detailRules = explode('|', $customRule);
             foreach ($detailRules as $detailRule) {
-                $ruleName  = self::parseRuleName($detailRule);
+                $ruleName = self::parseRuleName($detailRule);
+
                 $optionStr = explode(':', $detailRule)[1] ?? '';
                 $optionArr = explode(',', $optionStr);
+                if ($optionStr == '' && empty($optionArr)) {
+                    array_push($optionArr, '');
+                }
 
                 $convMethod = 'conver_' . $ruleName;
                 if (method_exists($this, $convMethod)) {
-                    $fieldValue = call_user_func_array([$this, $convMethod,], [$fieldValue]);
-
+                    $fieldValue = call_user_func_array([$this, $convMethod,], [$fieldValue, $optionArr]);
                 }
 
                 $ruleMethod = 'rule_' . $ruleName;
@@ -229,7 +232,7 @@ class Validation implements ValidationInterface {
      * @return array
      */
     public static function sortRules(array $rules): array {
-        $priorities = ['int', 'integer', 'bool', 'boolean', 'numeric', 'float', 'string'];
+        $priorities = ['default', 'int', 'integer', 'bool', 'boolean', 'numeric', 'float', 'string'];
         $res        = [];
 
         foreach ($rules as $rule) {
@@ -257,6 +260,22 @@ class Validation implements ValidationInterface {
      */
     public function getError() {
         return $this->errors;
+    }
+
+
+    /**
+     * 转换器-默认值
+     * @param $val
+     * @param array $options
+     * @return array|mixed
+     */
+    public static function conver_default($val, array $options = []) {
+        if ((is_null($val) || $val == '') && !empty($options)) {
+            $len = count($options);
+            $val = $len == 1 ? current($options) : $options;
+        }
+
+        return $val;
     }
 
 

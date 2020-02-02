@@ -76,9 +76,16 @@ class Params extends AbstractAnnotation {
     public $type;
 
 
+    /**
+     * @var array 字段枚举值
+     */
+    public $enum;
+
+
+
     public function __construct($value = null) {
         parent::__construct($value);
-        $this->setName()->setDescription()->setDetailRules()->setRquire()->setType();
+        $this->setName()->setDescription()->setDetailRules()->setRquire()->setType()->setDefault()->setEnum();
     }
 
 
@@ -161,5 +168,55 @@ class Params extends AbstractAnnotation {
 
         return $this;
     }
+
+
+    /**
+     * 设置字段默认值
+     * @return $this
+     */
+    public function setDefault() {
+        if(empty($this->_detailRules)) {
+            $this->setDetailRules();
+        }
+        foreach ($this->_detailRules as $detailRule) {
+            if(stripos($detailRule, 'default')!==false) {
+                $optionStr = explode(':', $detailRule)[1] ?? '';
+                $optionArr = explode(',', $optionStr);
+                if ($optionStr == '' && empty($optionArr)) {
+                    array_push($optionArr, '');
+                }
+                $len = count($optionArr);
+
+                $this->default = $len == 1 ? current($optionArr) : $optionArr;
+                break;
+            }
+        }
+
+        return $this;
+    }
+
+
+    /**
+     * 设置字段枚举值
+     * @return $this
+     */
+    public function setEnum() {
+        if(empty($this->_detailRules)) {
+            $this->setDetailRules();
+        }
+        foreach ($this->_detailRules as $detailRule) {
+            if(stripos($detailRule, 'enum')!==false) {
+                $optionStr = explode(':', $detailRule)[1] ?? '';
+                $optionArr = explode(',', $optionStr);
+
+                $this->enum = $optionArr;
+                break;
+            }
+        }
+
+        return $this;
+    }
+
+
 
 }

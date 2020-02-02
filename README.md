@@ -16,6 +16,8 @@ hyperf api and swagger helper.
 
 ![jwt](tests/03.jpg)  
 
+![default](tests/04.jpg)  
+
 
 
 ### 说明
@@ -144,6 +146,24 @@ class Test extends BaseController {
         return $res;
     }
 
+
+    /**
+     * @Get(description="生成验证码")
+     * @Query(key="len|验证码长度", rule="int|gt:0|max:10|default:6")
+     * @Query(key="type|验证码类型", rule="int|default:0|enum:0,1,2,3,4,5")
+     * @Query(key="width|图片宽度", rule="int|gt:1|default:100")
+     * @Query(key="height|图片高低", rule="int|gt:1|default:30")
+     * @ApiResponse(code=200, schema={"$ref":"Response"})
+     */
+    public function create() {
+        $len = $this->request->query('len');
+        $type = $this->request->query('type');
+        $width = $this->request->query('width');
+        $height = $this->request->query('height');
+
+        return $this->success($data);
+    }
+    
 }
 ```
 
@@ -152,6 +172,7 @@ class Test extends BaseController {
 - 先执行Hyperf官方规则,详见[hyperf validation](https://hyperf.wiki/#/zh-cn/validation)
 - 再执行本组件的验证规则,包括:  
   - 转换器,有
+    - default,将参数值设为指定的默认值
     - int/integer,将参数值转换为整型
     - float,将参数值转换为浮点数
     - bool,将参数值转换为布尔型
