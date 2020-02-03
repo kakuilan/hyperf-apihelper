@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Hyperf\Apihelper\Validation;
 
+use Hyperf\Apihelper\ApiAnnotation;
 use Hyperf\Apihelper\Exception\ValidationException;
 use Hyperf\Contract\TranslatorInterface;
 use Hyperf\Di\Annotation\Inject;
@@ -52,31 +53,32 @@ class Validation implements ValidationInterface {
     /**
      * 执行检查
      * @param array $rules 规则数组
-     * @param array $data 数据
+     * @param array $data 当前请求方式的数据
+     * @param array $otherData 其他请求方式的数据
      * @param object $obj 控制器对象
      * @param string $keyTree
      * @return array|bool
      * @throws ValidationException
      */
-    public function check(array $rules, array $data, object $obj = null, string $keyTree = null) {
+    public function check(array $rules, array $data, array $otherData=[], object $obj = null, string $keyTree = null) {
         $this->errors = [];
         $this->data   = [];
 
         $realRules   = []; //hyperf本身的验证器规则
         $customRules = []; //本组件的扩展验证规则
-        $finalData   = $data;
+        $allData = array_merge($otherData, $data);
 
         foreach ($rules as $field => $rule) {
-            $fieldName = self::getFieldByKey($field);
+            $fieldName = ApiAnnotation::getFieldByKey($field);
             $tree      = $keyTree ? $keyTree . '.' . $fieldName : $fieldName;
 
             //嵌套规则数组
             if (is_array($rule)) {
-                $ret = $this->check($rule, Arr::get($finalData, $fieldName, []), $obj, $tree);
+                $ret = $this->check($rule, Arr::get($allData, $fieldName, []), [], $obj, $tree);
                 if ($ret === false) {
                     return false;
                 }
-                $finalData[$field] = $ret;
+                $data[$field] = $ret;
                 continue;
             }
 
@@ -84,7 +86,7 @@ class Validation implements ValidationInterface {
             $detailRules = self::sortRules($detailRules);
             $arr1        = $arr2 = [];
             foreach ($detailRules as $detailRule) {
-                $ruleName = self::parseRuleName($detailRule);
+                $ruleName = ApiAnnotation::parseRuleName($detailRule);
 
                 //是否本组件的转换器
                 $convMethod = 'conver_' . $ruleName;
@@ -120,18 +122,20 @@ class Validation implements ValidationInterface {
         }
 
         //先执行hyperf的验证
-        $validator = $this->validator->make($finalData, $realRules);
-        $finalData = $validator->validate();
+        $validator = $this->validator->make($allData, $realRules);
+        $newData = $validator->validate();
+        $data = self::combineData($data, $newData);
 
         //再执行自定义验证
         foreach ($customRules as $field => $customRule) {
-            if (empty($customRule))
+            if (empty($customRule)) {
                 continue;
+            }
 
-            $fieldValue  = $finalData[$field] ?? null;
+            $fieldValue  = $allData[$field] ?? null;
             $detailRules = explode('|', $customRule);
             foreach ($detailRules as $detailRule) {
-                $ruleName = self::parseRuleName($detailRule);
+                $ruleName = ApiAnnotation::parseRuleName($detailRule);
 
                 $optionStr = explode(':', $detailRule)[1] ?? '';
                 $optionArr = explode(',', $optionStr);
@@ -147,8 +151,9 @@ class Validation implements ValidationInterface {
                 $ruleMethod = 'rule_' . $ruleName;
                 if (method_exists($this, $ruleMethod)) {
                     $check = call_user_func_array([$this, $ruleMethod,], [$fieldValue, $field, $optionArr]);
-                    if (!$check)
+                    if (!$check) {
                         break;
+                    }
                 }
 
                 // cb_xxx,调用控制器的方法xxx
@@ -171,7 +176,7 @@ class Validation implements ValidationInterface {
                     }
                 }
             }
-            $finalData[$field] = $fieldValue;
+            $data[$field] = $fieldValue;
         }
 
         $this->errors = array_merge($this->errors, $validator->errors()->getMessages());
@@ -179,38 +184,31 @@ class Validation implements ValidationInterface {
             return false;
         }
 
-        return $finalData;
+        return $data;
     }
 
 
     /**
-     * 从注解key中获取字段名
-     * @param string $key
-     * @return string
+     * 合并数据
+     * 将新数据更新到源数据中.
+     * @param array $origin
+     * @param array $new
+     * @return array
      */
-    public static function getFieldByKey(string $key): string {
-        $arr = explode('|', $key);
-        $res = $arr[0] ?? '';
-        return $res;
-    }
-
-
-    /**
-     * 解析规则名
-     * @param string $str
-     * @return string
-     */
-    public static function parseRuleName(string $str): string {
-        //过滤如gt[0] 或 enum[0,1]
-        $res = preg_replace('/\[.*\]/', '', $str);
-
-        if (strpos($res, ':')) { //形如 max:value
-            $arr = explode(':', $res);
-            $res = $arr[0];
+    public static function combineData(array $origin, array $new=[]):array {
+        if(empty($origin) || empty($new)) {
+            return [];
         }
 
-        return trim($res);
+        foreach ($origin as $k=>$item) {
+            if(isset($new[$k])) {
+                $origin[$k] = $new[$k];
+            }
+        }
+
+        return $origin;
     }
+
 
 
     /**

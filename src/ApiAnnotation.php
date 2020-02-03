@@ -70,4 +70,34 @@ class ApiAnnotation {
     }
 
 
+    /**
+     * 解析规则名
+     * @param string $str
+     * @return string
+     */
+    public static function parseRuleName(string $str): string {
+        //过滤如gt[0] 或 enum[0,1]
+        $res = preg_replace('/\[.*\]/', '', $str);
+
+        if (strpos($res, ':')) { //形如 max:value
+            $arr = explode(':', $res);
+            $res = $arr[0];
+        }
+
+        return trim($res);
+    }
+
+
+    /**
+     * 从注解key中获取字段名
+     * @param string $key
+     * @return string
+     */
+    public static function getFieldByKey(string $key): string {
+        $arr = explode('|', $key);
+        $res = $arr[0] ?? '';
+        return $res;
+    }
+
+
 }

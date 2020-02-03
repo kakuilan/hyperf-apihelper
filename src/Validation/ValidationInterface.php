@@ -13,7 +13,7 @@ namespace Hyperf\Apihelper\Validation;
 
 interface ValidationInterface {
 
-    public function check(array $rules, array $data, object $obj = null, string $keyTree = null);
+    public function check(array $rules, array $data, array $otherData=[], object $obj = null, string $keyTree = null);
 
     public function getError();
 

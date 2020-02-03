@@ -10,6 +10,7 @@
 declare(strict_types=1);
 namespace Hyperf\Apihelper\Annotation;
 
+use Hyperf\Apihelper\ApiAnnotation;
 use Hyperf\Di\Annotation\AbstractAnnotation;
 use Lkk\Helpers\ArrayHelper;
 
@@ -98,7 +99,7 @@ class Params extends AbstractAnnotation {
         if(!empty($name)) {
             $this->name = $name;
         }elseif (!empty($this->key)) {
-            $this->name = explode('|', $this->key)[0];
+            $this->name = ApiAnnotation::getFieldByKey($this->key);
         }
 
         return $this;
@@ -145,7 +146,14 @@ class Params extends AbstractAnnotation {
      * @return $this
      */
     public function setRquire() {
-        $this->required = ArrayHelper::dstrpos('required', $this->_detailRules);
+        foreach ($this->_detailRules as $detailRule) {
+            $ruleName = ApiAnnotation::parseRuleName($detailRule);
+            //一定要等于"required",因为还有其他规则名如required_without_all等
+            if($ruleName=='required') {
+                $this->required = true;
+                break;
+            }
+        }
 
         return $this;
     }

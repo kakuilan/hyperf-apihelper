@@ -159,12 +159,16 @@ class ApiValidationMiddleware extends CoreMiddleware {
             }
         }
 
+        $headers = $request->getHeaders();
+        $queryData = $request->getQueryParams();
+        $postData = $request->getParsedBody();
+        $allData = array_merge($headers, $queryData, $postData);
+
         if ($headerRules) {
-            $headers = $request->getHeaders();
             $headers = array_map(function ($item) {
                 return $item[0];
             }, $headers);
-            [$data, $error] = $this->check($headerRules, $headers, $controllerInstance);
+            [$data, $error] = $this->check($headerRules, $headers, $allData, $controllerInstance);
             if ($data === false) {
                 return $this->response->json(ApiResponse::doFail([400, $error]));
             }
@@ -172,14 +176,14 @@ class ApiValidationMiddleware extends CoreMiddleware {
 
         if ($pathRules) {
             $pathData = $routes[2] ?? [];
-            [$data, $error] = $this->check($pathRules, $pathData, $controllerInstance);
+            [$data, $error] = $this->check($pathRules, $pathData, $allData, $controllerInstance);
             if ($data === false) {
                 return $this->response->json(ApiResponse::doFail([400, $error]));
             }
         }
 
         if ($queryRules) {
-            [$data, $error] = $this->check($queryRules, $request->getQueryParams(), $controllerInstance);
+            [$data, $error] = $this->check($queryRules, $queryData, $allData, $controllerInstance);
             if ($data === false) {
                 return $this->response->json(ApiResponse::doFail([400, $error]));
             }
@@ -187,7 +191,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
         }
 
         if ($bodyRules) {
-            [$data, $error] = $this->check($bodyRules, (array)json_decode($request->getBody()->getContents(), true), $controllerInstance);
+            [$data, $error] = $this->check($bodyRules, (array)json_decode($request->getBody()->getContents(), true), [], $controllerInstance);
             if ($data === false) {
                 return $this->response->json(ApiResponse::doFail([400, $error]));
             }
@@ -195,7 +199,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
         }
 
         if ($formRules) {
-            [$data, $error] = $this->check($formRules, $request->getParsedBody(), $controllerInstance);
+            [$data, $error] = $this->check($formRules, $postData, $allData, $controllerInstance);
             if ($data === false) {
                 return $this->response->json(ApiResponse::doFail([400, $error]));
             }
@@ -213,11 +217,12 @@ class ApiValidationMiddleware extends CoreMiddleware {
      * 检查
      * @param $rules
      * @param $data
+     * @param $otherData
      * @param $controllerInstance
      * @return array
      */
-    public function check($rules, $data, $controllerInstance) {
-        $validatedData = $this->validation->check($rules, $data, $controllerInstance);
+    public function check($rules, $data, $otherData, $controllerInstance) {
+        $validatedData = $this->validation->check($rules, $data, $otherData, $controllerInstance);
         $errors        = $this->validation->getError();
         $error         = empty($errors) ? '' : current($errors);
 
