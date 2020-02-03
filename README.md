@@ -149,6 +149,8 @@ class Test extends BaseController {
 
     /**
      * @Get(description="生成验证码")
+     * @Header(key="authorization|访问令牌", rule="required_without_all:access_token")
+     * @Query(key="access_token|访问令牌", rule="required_without_all:authorization")     
      * @Query(key="len|验证码长度", rule="int|gt:0|max:10|default:6")
      * @Query(key="type|验证码类型", rule="int|default:0|enum:0,1,2,3,4,5")
      * @Query(key="width|图片宽度", rule="int|gt:1|default:100")
