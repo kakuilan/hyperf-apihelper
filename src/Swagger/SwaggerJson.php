@@ -121,7 +121,7 @@ class SwaggerJson {
             'produces' => ['application/json',],
             'responses' => $this->makeResponses($responses, $path, $method),
             'description' => $mapping->description,
-            ];
+        ];
 
         if ($hasVersion) {
             $this->addGroupInfo($versionAnnotations->group, $versionAnnotations->description, $paths);
@@ -138,18 +138,22 @@ class SwaggerJson {
      * @param array $paths
      */
     protected function addGroupInfo(string $name, string $desc, array $paths = []) {
-        if (empty($name))
+        if (empty($name)) {
             return;
+        }
 
         if (!isset($this->groups[$name])) {
             $this->groups[$name] = ['name' => $name, 'description' => $desc, 'paths' => [],];
         }
 
-        if (!empty($desc))
+        if (!empty($desc)) {
             $this->groups[$name]['description'] = $desc;
+        }
 
-        if (!empty($paths))
+
+        if (!empty($paths)) {
             $this->groups[$name]['paths'] = array_merge($this->groups[$name]['paths'], $paths);
+        }
 
     }
 
@@ -158,7 +162,15 @@ class SwaggerJson {
      * 初始化常用模型定义
      */
     public function initDefinitions() {
-        $response = ['type' => 'object', 'required' => [], 'properties' => ['status' => ['type' => 'boolean', 'example' => true,], 'msg' => ['type' => 'string', 'example' => 'success',], 'code' => ['type' => 'integer', 'format' => 'int64', 'example' => 200,], 'data' => ['type' => 'array', 'example' => [],],],];
+        $response = [
+            'type' => 'object',
+            'required' => [],
+            'properties' => [
+                'status' => ['type' => 'boolean', 'example' => true,],
+                'msg' => ['type' => 'string', 'example' => 'success',],
+                'code' => ['type' => 'integer', 'format' => 'int64', 'example' => 200,],
+                'data' => ['type' => 'array', 'example' => [],],],
+        ];
 
         $arraySchema  = ['type' => 'array', 'required' => [], 'items' => ['type' => 'string'],];
         $objectSchema = ['type' => 'object', 'required' => [], 'items' => ['type' => 'string'],];
@@ -265,7 +277,7 @@ class SwaggerJson {
                 'description' => $item->description,
                 'required' => $item->required,
                 'type' => $item->type,
-                ];
+            ];
 
             if(!is_null($item->default)) $parameters[$item->name]['default']= $item->default;
             if(!is_null($item->enum)) $parameters[$item->name]['enum']= $item->enum;
