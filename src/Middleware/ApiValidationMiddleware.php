@@ -159,15 +159,14 @@ class ApiValidationMiddleware extends CoreMiddleware {
             }
         }
 
-        $headers = $request->getHeaders();
+        $headers = array_map(function ($item) {
+            return $item[0];
+        }, $request->getHeaders());
         $queryData = $request->getQueryParams();
         $postData = $request->getParsedBody();
         $allData = array_merge($headers, $queryData, $postData);
 
         if ($headerRules) {
-            $headers = array_map(function ($item) {
-                return $item[0];
-            }, $headers);
             [$data, $error] = $this->check($headerRules, $headers, $allData, $controllerInstance);
             if ($data === false) {
                 return $this->response->json(ApiResponse::doFail([400, $error]));
