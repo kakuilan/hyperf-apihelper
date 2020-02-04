@@ -226,6 +226,6 @@ public function initialization(ServerRequestInterface $request): ServerRequestIn
 - swagger更多属性的支持
 - 多层级参数/body参数的校验
 - upload数据校验
-
+- 配置生产环境不提示具体参数错误
 
 
