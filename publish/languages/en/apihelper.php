@@ -25,5 +25,6 @@ return [
     '402' => 'Logged in on other devices',
     '403' => 'Not logged in or logged out',
     '404' => 'The requested content does not exist',
+    '412' => 'Missing necessary parameters, or parameter type error',
     '500' => 'Server error',
 ];
