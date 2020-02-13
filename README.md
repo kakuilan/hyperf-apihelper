@@ -102,7 +102,7 @@ class Test extends BaseController {
      * @Query(key="u", rule="required|active_url|trim")
      * @Query(key="t", rule="required|starts_with:a")
      * @Query(key="e", rule="required|trim|enum:e,f,g")
-     * @Query(key="h", rule="trim|cb_chkHello:4,5,6")
+     * @Query(key="h", rule="trim|cb_chkHello")
      * @ApiResponse(code=200, schema={"$ref":"Response"})
      */
     public function get() {
