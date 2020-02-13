@@ -213,11 +213,11 @@ public function initialization(ServerRequestInterface $request): ServerRequestIn
 
 ### 校验参数提示
 - 配置开发环境提示具体参数错误  
-编辑publish/apihelper.php,将show_params_detail_error设为true,  
+编辑apihelper.php配置,将show_params_detail_error设为true,  
 接口将显示具体字段验证规则的错误信息,方便前端调试.
 
 - 配置生产环境不提示具体参数错误  
-编辑publish/apihelper.php,将show_params_detail_error设为false,  
+编辑apihelper.php配置,将show_params_detail_error设为false,  
 接口将隐藏具体字段验证信息,而仅提示"缺少必要的参数,或参数类型错误",减少外部安全攻击的可能.
 
 
