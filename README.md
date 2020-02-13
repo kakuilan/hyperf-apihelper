@@ -211,7 +211,14 @@ public function initialization(ServerRequestInterface $request): ServerRequestIn
 方法名可以在config/autoload/apihelper.php中的controller_antecedent中指定,默认为initialization  
 具体可以参考src/BaseController.php
 
+### 校验参数提示
+- 配置开发环境提示具体参数错误  
+编辑publish/apihelper.php,将show_params_detail_error设为true,  
+接口将显示具体字段验证规则的错误信息,方便前端调试.
 
+- 配置生产环境不提示具体参数错误  
+编辑publish/apihelper.php,将show_params_detail_error设为false,  
+接口将隐藏具体字段验证信息,而仅提示"缺少必要的参数,或参数类型错误",减少外部安全攻击的可能.
 
 
 ### swagger生成
@@ -226,6 +233,5 @@ public function initialization(ServerRequestInterface $request): ServerRequestIn
 - swagger更多属性的支持
 - 多层级参数/body参数的校验
 - upload数据校验
-- 配置生产环境不提示具体参数错误
 
 
