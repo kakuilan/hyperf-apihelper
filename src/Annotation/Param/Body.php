@@ -27,7 +27,7 @@ class Body extends Params {
     }
 
     public function setRquire() {
-        $this->required = strpos(json_encode($this->rules), 'required') !== false;
+        $this->required = strpos(json_encode($this->rule), 'required') !== false;
         return $this;
     }
 
