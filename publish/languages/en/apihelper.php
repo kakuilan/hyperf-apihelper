@@ -17,6 +17,7 @@ return [
     'rule_natural' => 'The :field not a natural number.',
     'rule_cnmobile' => 'The :field not a phone number.',
     'rule_enum' => 'The :field must be on of :values',
+    'rule_object' => 'The :field must be object(array of key-value pairs)',
 
     //响应体错误码
     '200' => 'Success',

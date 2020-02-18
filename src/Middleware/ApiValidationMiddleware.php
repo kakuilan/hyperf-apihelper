@@ -152,7 +152,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
                 $queryRules[$annotation->key] = $annotation->rule;
             }
             if ($annotation instanceof Body) {
-                $bodyRules = $annotation->rules;
+                $bodyRules = $annotation->rule;
             }
             if ($annotation instanceof Form) {
                 $formRules[$annotation->key] = $annotation->rule;

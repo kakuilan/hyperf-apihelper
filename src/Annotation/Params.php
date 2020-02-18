@@ -13,6 +13,7 @@ namespace Hyperf\Apihelper\Annotation;
 use Hyperf\Apihelper\ApiAnnotation;
 use Hyperf\Di\Annotation\AbstractAnnotation;
 use Lkk\Helpers\ArrayHelper;
+use Lkk\Helpers\ValidateHelper;
 
 class Params extends AbstractAnnotation {
 
@@ -33,12 +34,6 @@ class Params extends AbstractAnnotation {
      * @var string 单个规则字符串
      */
     public $rule;
-
-
-    /**
-     * @var array 多个规则json的串,主要针对body数据,自动解释为数组
-     */
-    public $rules;
 
 
     /**
@@ -128,13 +123,7 @@ class Params extends AbstractAnnotation {
      */
     public function setDetailRules() {
         if(!empty($this->rule)) {
-            $arr = explode('|', $this->rule);
-            array_walk($arr, function(&$item) {
-                $item = trim($item);
-                return $item;
-            });
-
-            $this->_detailRules = array_unique(array_filter($arr));
+            $this->_detailRules = ApiAnnotation::parseDetailsByRule($this->rule);
         }
 
         return $this;
@@ -166,10 +155,18 @@ class Params extends AbstractAnnotation {
     public function setType() {
         $type = 'string';
 
-        if(ArrayHelper::dstrpos('int', $this->_detailRules) || ArrayHelper::dstrpos('integer', $this->_detailRules)) {
+        if(in_array('int', $this->_detailRules) || in_array('integer', $this->_detailRules)) {
             $type = 'integer';
-        }elseif (ArrayHelper::dstrpos('float', $this->_detailRules)) {
+        }elseif (in_array('float', $this->_detailRules)) {
             $type = 'float';
+        }elseif (in_array('number', $this->_detailRules) || in_array('numeric', $this->_detailRules)){ // numeric 是hyperf官方验证规则
+            $type = 'number';
+        }elseif (in_array('bool', $this->_detailRules) || in_array('boolean', $this->_detailRules)){ // boolean 是hyperf官方验证规则
+            $type = 'boolean';
+        }elseif (in_array('array', $this->_detailRules)){ // array 是hyperf官方验证规则
+            $type = 'array';
+        }elseif (in_array('object', $this->_detailRules)){ // object 是swagger的数据类型
+            $type = 'object';
         }
 
         $this->type = $type;

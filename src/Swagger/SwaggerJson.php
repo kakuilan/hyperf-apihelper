@@ -221,13 +221,15 @@ class SwaggerJson {
      * @return string
      */
     public function getTypeByRule(string $rule) {
-        $details = explode('|', $rule);
-        $digItem = ArrayHelper::dstrpos($rule, ['gt', 'gte', 'lt', 'lte', 'max', 'min', 'numeric'], true);
+        $details = ApiAnnotation::parseDetailsByRule($rule);
+        $digItem = ArrayHelper::dstrpos($rule, ['gt', 'gte', 'lt', 'lte', 'max', 'min'], true);
 
         if (array_intersect($details, ['integer', 'int'])) {
             return 'integer';
         } elseif (array_intersect($details, ['float'])) {
             return 'float';
+        } elseif (array_intersect($details, ['number','numeric'])) {
+            return 'number';
         } elseif (array_intersect($details, ['boolean', 'bool'])) {
             return 'boolean';
         } elseif (array_intersect($details, ['array'])) {
@@ -271,13 +273,27 @@ class SwaggerJson {
 
         /** @var \Hyperf\Apihelper\Annotation\Params $item */
         foreach ($params as $item) {
-            $parameters[$item->name] = [
+            $property = [
                 'in' => $item->in,
                 'name' => $item->name,
                 'description' => $item->description,
                 'required' => $item->required,
                 'type' => $item->type,
             ];
+            if($item->type =='array') {
+                $property['name'] = "{$item->name}[]";
+                $property['items'] = new \stdClass();
+                $property['collectionFormat'] = 'multi';
+            }
+            //这里的对象,是键值对数组
+            if($item->type =='object') {
+                $property['name'] = "{$item->name}[]";
+                $property['type'] = 'array';
+                $property['items'] = new \stdClass();
+                $property['collectionFormat'] = 'multi';
+            }
+
+            $parameters[$item->name] = $property;
 
             if(!is_null($item->default)) $parameters[$item->name]['default']= $item->default;
             if(!is_null($item->enum)) $parameters[$item->name]['enum']= $item->enum;
@@ -285,12 +301,13 @@ class SwaggerJson {
 
             //单独处理body参数
             if ($item instanceof Body) {
-                $modelName = implode('', array_map('ucfirst', explode('/', $path)));
-
-                $schema = $this->rules2schema($item->rules);
-
-                $this->confSwagger['definitions'][$modelName] = $schema;
-                $parameters[$item->name]['schema']['$ref']    = '#/definitions/' . $modelName;
+                // TODO
+//                $modelName = implode('', array_map('ucfirst', explode('/', $path)));
+//
+//                $schema = $this->rules2schema($item->rule);
+//
+//                $this->confSwagger['definitions'][$modelName] = $schema;
+//                $parameters[$item->name]['schema']['$ref']    = '#/definitions/' . $modelName;
             }
         }
 

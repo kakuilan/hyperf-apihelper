@@ -230,7 +230,7 @@ class Validation implements ValidationInterface {
      * @return array
      */
     public static function sortRules(array $rules): array {
-        $priorities = ['default', 'int', 'integer', 'bool', 'boolean', 'numeric', 'float', 'string'];
+        $priorities = ['default', 'int', 'integer', 'bool', 'boolean', 'number', 'numeric', 'float', 'string', 'array', 'object'];
         $res        = [];
 
         foreach ($rules as $rule) {
@@ -240,6 +240,8 @@ class Validation implements ValidationInterface {
                     $rule = 'integer';
                 } elseif ($lowRule == 'bool') {
                     $rule = 'boolean';
+                }elseif ($lowRule == 'number') {
+                    $rule = 'numeric';
                 }
 
                 array_unshift($res, $rule);
@@ -314,7 +316,6 @@ class Validation implements ValidationInterface {
      */
     public static function conver_boolean($val): bool {
         if (empty($val) || in_array(strtolower($val), ['false', 'null', 'nil', 'none', '0',])) {
-
             return false;
         } elseif (in_array(strtolower($val), ['true', '1',])) {
             return true;
@@ -352,9 +353,6 @@ class Validation implements ValidationInterface {
      * @return bool
      */
     public function rule_safe_password($val, string $field, array $options = []): bool {
-        if ($val === '') {
-            return true;
-        }
         if (strlen($val) < 8) {
             $this->errors[] = $this->translator->trans('apihelper.rule_safe_password_len', ['field' => $field]);
             return false;
@@ -389,9 +387,6 @@ class Validation implements ValidationInterface {
      * @return bool
      */
     public function rule_natural($val, string $field, array $options = []): bool {
-        if ($val === '') {
-            return true;
-        }
         if (!preg_match('/^[0-9]+$/', $val)) {
             $this->errors[] = $this->translator->trans('apihelper.rule_natural', ['field' => $field]);
             return false;
@@ -428,17 +423,44 @@ class Validation implements ValidationInterface {
     public function rule_enum($val, string $field, array $options = []): bool {
         if (empty($options)) {
             return true;
-        } elseif ($val === '') {
-            return false;
         }
 
-        if (!in_array($val, $options)) {
+        $chk = $val!=='' && in_array($val, $options);
+        if(!$chk) {
             $this->errors[] = $this->translator->trans('apihelper.rule_enum', ['field' => $field, 'values' => implode(',', $options)]);
             return false;
         }
 
         return true;
     }
+
+
+    /**
+     * 验证-对象(键值对数组)
+     * @param $val
+     * @param string $field
+     * @param array $options
+     * @return bool
+     */
+    public function rule_object($val, string $field, array $options = []): bool {
+        // 必须是数组
+        if(!is_array($val)) {
+            $this->errors[] = $this->translator->trans('apihelper.rule_object', ['field' => $field]);
+            return false;
+        }
+
+        // 键值不能是数字
+        $keys = array_keys($val);
+        foreach ($keys as $key) {
+            if(is_integer($key)) {
+                $this->errors[] = $this->translator->trans('apihelper.rule_object', ['field' => $field]);
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
 
 
 }

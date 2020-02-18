@@ -17,6 +17,7 @@ return [
     'rule_natural' => ':field 不是合法的自然数',
     'rule_cnmobile' => ':field 不是合法的手机号',
     'rule_enum' => ':field 必须是 :values 其中之一',
+    'rule_object' => ':field 必须是对象(键值对数组)',
 
     //响应体错误码
     '200' => 'Success',

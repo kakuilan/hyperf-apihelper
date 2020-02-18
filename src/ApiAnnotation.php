@@ -17,6 +17,7 @@ use Hyperf\Apihelper\Annotation\ApiController;
 use Hyperf\Apihelper\Annotation\ApiVersion;
 use Hyperf\Di\Annotation\AnnotationCollector;
 use Hyperf\Di\ReflectionManager;
+use Lkk\Helpers\ValidateHelper;
 
 class ApiAnnotation {
 
@@ -67,6 +68,26 @@ class ApiAnnotation {
         $path = str_replace('app/controller', '', $path); //去掉命名空间的前缀,如 app/controller/indexcontroller=>indexcontroller
         $path = str_replace('controller', '', $path); //去掉类名中带有的controller,如indexcontroller=>index
         return $path;
+    }
+
+
+    /**
+     * 从规则字符串中解析出具体的规则数组
+     * @param string $rule
+     * @return array
+     */
+    public static function parseDetailsByRule(string $rule):array {
+        $arr = explode('|', $rule);
+        array_walk($arr, function(&$item) {
+            $item = trim($item);
+            if(ValidateHelper::isWord($item)) {
+                $item = strtolower($item);
+            }
+
+            return $item;
+        });
+
+        return array_unique(array_filter($arr));
     }
 
 

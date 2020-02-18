@@ -18,7 +18,7 @@ hyperf api and swagger helper.
 
 ![default](tests/04.jpg)  
 
-
+![array](tests/05.jpg)  
 
 ### 说明
 本组件是参考[apidog](https://github.com/daodao97/apidog)的改写.
@@ -163,9 +163,21 @@ class Test extends BaseController {
         $width = $this->request->query('width');
         $height = $this->request->query('height');
 
-        return $this->success($data);
+        return $this->success([]);
     }
     
+
+    /**
+     * @Post(path="/arrparam", description="数组形式参数")
+     * @Form(key="arr", rule="required|array")
+     * @ApiResponse(code=200, schema={"$ref":"Response"})
+     */
+    public function arrparam() {
+        $post = $this->request->post();
+        return $this->success($post);
+    }
+
+
 }
 ```
 
@@ -233,6 +245,6 @@ public function initialization(ServerRequestInterface $request): ServerRequestIn
 - swagger更多属性的支持
 - 多层级参数/body参数的校验
 - upload数据校验
-- 支持row[a]数组形式参数
+- 支持row[a]键值对数组形式参数
 
 
