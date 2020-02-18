@@ -233,5 +233,6 @@ public function initialization(ServerRequestInterface $request): ServerRequestIn
 - swagger更多属性的支持
 - 多层级参数/body参数的校验
 - upload数据校验
+- 支持row[a]数组形式参数
 
 
