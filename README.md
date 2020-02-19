@@ -10,21 +10,6 @@ hyperf api and swagger helper.
 - 支持自定义拦截动作.
 
 
-### 图例
-![api多版本](tests/01.jpg)  
-
-![jwt](tests/02.jpg)  
-
-![jwt](tests/03.jpg)  
-
-![default](tests/04.jpg)  
-
-![array](tests/05.jpg)  
-
-### 说明
-本组件是参考[apidog](https://github.com/daodao97/apidog)的改写.
-
-
 ### 安装
 - 指定站点目录为 BASE_PATH/public,swagger-ui将自动发布到该目录下
 - 安装组件
@@ -256,6 +241,23 @@ public function interceptor(string $controller, string $action, string $route): 
 3.  返回结果定义 `ApiResponse` ,json串,如{"status":true,"msg":"success","code":200,"data":[]}
 4.  ApiVersion接口版本分组并不影响方法里面的实际绑定路由;它只是把控制器里面的接口,归入到某个swagger文件,以便查看.
 5.  生产环境请将配置output_json修改为false,关闭swagger.
+
+
+### 图例
+![api多版本](tests/01.jpg)  
+
+![jwt](tests/02.jpg)  
+
+![jwt](tests/03.jpg)  
+
+![default](tests/04.jpg)  
+
+![array](tests/05.jpg)  
+
+
+### 说明
+本组件是参考[apidog](https://github.com/daodao97/apidog)的改写.
+
 
 ## TODO
 - swagger更多属性的支持
