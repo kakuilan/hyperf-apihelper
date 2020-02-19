@@ -12,9 +12,12 @@ use Psr\Http\Message\ServerRequestInterface;
 return [
     //api配置
     'api' => [
-        //控制器前置方法,每次先于具体动作之前执行,该方法必须仅接受一个ServerRequestInterface类型的参数,并返回
+        //控制器前置方法,每次先于具体动作之前执行,该方法必须仅接受一个ServerRequestInterface类型的参数,并返回.
         //形如, fn(ServerRequestInterface $request):ServerRequestInterface
         'controller_antecedent' => 'initialization',
+        //控制器拦截方法,每次先于具体动作之前执行;若该方法返回非空的数组或字符串,则停止执行后续的具体动作.
+        //形如, fn(string $controller, string $action, string $route):mixed
+        'controller_intercept' => 'interceptor',
         //是否显示具体的参数错误,生产环境可关闭
         'show_params_detail_error' => true,
     ],

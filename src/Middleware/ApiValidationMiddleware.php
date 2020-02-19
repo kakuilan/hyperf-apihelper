@@ -25,10 +25,12 @@ use Hyperf\Apihelper\Validation\Validation;
 use Hyperf\Apihelper\Validation\ValidationInterface;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\Di\Annotation\Inject;
+use Hyperf\Dispatcher\HttpRequestHandler;
 use Hyperf\HttpMessage\Stream\SwooleStream;
 use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
 use Hyperf\HttpServer\CoreMiddleware;
+use Hyperf\HttpServer\Router\Dispatched;
 use Hyperf\HttpServer\Router\Handler;
 use Hyperf\Server\Exception\RuntimeException;
 use Hyperf\Utils\Context;
@@ -205,11 +207,49 @@ class ApiValidationMiddleware extends CoreMiddleware {
             $request = $request->withParsedBody($data);
         }
 
-        //TODO withUploadedFiles vendor/hyperf/http-message/src/Server/Request.php
-
         Context::set(ServerRequestInterface::class, $request);
+
+        //执行控制器拦截方法
+        $interceptAction = $globalConf->get('apihelper.api.controller_intercept');
+        if (!empty($interceptAction) && method_exists($controllerInstance, $interceptAction)) {
+            $fn = new ReflectionMethod($controllerInstance, $interceptAction);
+
+            if (!$fn->isPublic()) {
+                $cls = get_class($controllerInstance);
+                throw new RuntimeException("{$cls}::{$interceptAction} must be public method.");
+            }
+
+            //检查该方法的参数是否符合要求
+            $paramNum = $fn->getNumberOfParameters();
+            if ($paramNum != 3) {
+                $cls = get_class($controllerInstance);
+                throw new RuntimeException("{$cls}::{$interceptAction} must has three parameter.");
+            }
+
+            //参数类型是否符合
+            foreach ($fn->getParameters() AS $arg) {
+                if ($arg->getType()->getName() != 'string') {
+                    $cls = get_class($controllerInstance);
+                    throw new RuntimeException("{$cls}::{$interceptAction} the parameter type must be string");
+                }
+            }
+
+            //先于动作之前调用
+            try {
+                $ret = call_user_func_array([$controllerInstance, $interceptAction], [$controller, $action, ($routes[1]->route??'')]);
+                //若返回非空的数组或字符串,则终止后续动作的执行
+                if(!empty($ret) && (is_array($ret) || is_string($ret)) ) {
+                    return is_array($ret) ? $this->response->json($ret) : $this->response->raw($ret);
+                }
+            } catch (Exception $e) {
+                throw new RuntimeException($e);
+            }
+        }
+
+        //TODO withUploadedFiles vendor/hyperf/http-message/src/Server/Request.php
         return $handler->handle($request);
     }
+
 
 
     /**

@@ -7,6 +7,7 @@ hyperf api and swagger helper.
 - swagger支持接口多版本分组管理.
 - 支持restful path路由参数校验.
 - 支持自定义前置动作.
+- 支持自定义拦截动作.
 
 
 ### 图例
@@ -215,13 +216,28 @@ class Test extends BaseController {
 
 ### 自定义前置动作  
 可以自定义控制器前置方法,每次在具体动作之前执行.  
-该功能主要是将自定义的数据存储到request属性中,每次请求后销毁,避免控制器协程间的数据混淆.  
+该功能主要是数据初始化,将自定义的数据存储到request属性中,每次请求后销毁,避免控制器协程间的数据混淆.  
 该方法必须严格定义，形如:  
 ```php
 public function initialization(ServerRequestInterface $request): ServerRequestInterface
 ```
+该方法不会中止后续具体动作的执行.  
 方法名可以在config/autoload/apihelper.php中的controller_antecedent中指定,默认为initialization  
 具体可以参考src/BaseController.php
+
+
+### 自定义拦截动作
+可以自定义控制器拦截方法,每次在具体动作之前执行.  
+该功能主要是执行逻辑检查(如令牌或权限),当不符合要求时,中止后续具体动作的执行.  
+该方法必须严格定义,形如:  
+```php
+public function interceptor(string $controller, string $action, string $route): mixed
+```
+若该方法返回非空的数组或字符串,则停止执行后续的具体动作.  
+方法名可以在config/autoload/apihelper.php中的controller_intercept中指定,默认为interceptor  
+具体可以参考src/BaseController.php
+
+
 
 ### 校验参数提示
 - 配置开发环境提示具体参数错误  
