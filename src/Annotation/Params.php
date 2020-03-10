@@ -15,6 +15,10 @@ use Hyperf\Apihelper\ApiAnnotation;
 use Hyperf\Di\Annotation\AbstractAnnotation;
 
 
+/**
+ * Class Params
+ * @package Hyperf\Apihelper\Annotation
+ */
 class Params extends AbstractAnnotation {
 
 
@@ -78,6 +82,10 @@ class Params extends AbstractAnnotation {
     public $enum;
 
 
+    /**
+     * Params constructor.
+     * @param mixed $value
+     */
     public function __construct($value = null) {
         parent::__construct($value);
         $this->setName()->setDescription()->setDetailRules()->setRquire()->setType()->setDefault()->setEnum();

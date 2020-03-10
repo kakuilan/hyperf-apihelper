@@ -11,3 +11,6 @@ https://www.huangdayu.cn/2018/12/16/Swagger%E6%B3%A8%E8%A7%A3%E6%A6%82%E8%A7%88/
 https://learnku.com/laravel/t/7430/how-to-write-api-documents-based-on-swagger-php
 https://www.v2ex.com/t/492979
 https://github.com/lfq618/blog/blob/master/php/Swagger%E7%94%9F%E6%88%90php%20restful%20API%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3.md
+
+### TODO
+- 控制器前置方法/拦截方法的不要放在ApiValidationMiddleware里面(每次验证时都要检查);移到Swagger里面,启动时检查一次就行.

@@ -13,6 +13,11 @@ namespace Hyperf\Apihelper\Annotation;
 
 use Hyperf\HttpServer\Annotation\Mapping;
 
+
+/**
+ * Class Methods
+ * @package Hyperf\Apihelper\Annotation
+ */
 class Methods extends Mapping {
 
 
