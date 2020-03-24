@@ -218,9 +218,9 @@ class Test extends BaseController {
   返回结果必须是一个数组:  
   若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.  
   形如:
-```php
-public function cb_xxx($value, string $field, array $options): array
-```
+    ```php
+    public function fn($value, string $field, array $options): array
+    ```
 
   
 
