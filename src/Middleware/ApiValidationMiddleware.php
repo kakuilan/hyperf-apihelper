@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Administrator
+ * User: kakuilan
  * Date: 2020/3/9
  * Time: 16:35
  * Desc:
@@ -16,13 +16,15 @@ use Exception;
 use FastRoute\Dispatcher;
 use Hyperf\Apihelper\Annotation\ApiResponse;
 use Hyperf\Apihelper\Annotation\Param\Body;
+use Hyperf\Apihelper\Annotation\Param\File;
 use Hyperf\Apihelper\Annotation\Param\Form;
 use Hyperf\Apihelper\Annotation\Param\Header;
 use Hyperf\Apihelper\Annotation\Param\Path;
 use Hyperf\Apihelper\Annotation\Param\Query;
 use Hyperf\Apihelper\ApiAnnotation;
-use Hyperf\Apihelper\Validation\Validator;
+use Hyperf\Apihelper\DispatcherFactory;
 use Hyperf\Apihelper\Validation\ValidationInterface;
+use Hyperf\Apihelper\Validation\Validator;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\Dispatcher\HttpRequestHandler;
@@ -34,6 +36,8 @@ use Hyperf\HttpServer\Router\Dispatched;
 use Hyperf\HttpServer\Router\Handler;
 use Hyperf\Server\Exception\RuntimeException;
 use Hyperf\Utils\Context;
+use Kph\Consts;
+use Kph\Objects\BaseObject;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -110,34 +114,6 @@ class ApiValidationMiddleware extends CoreMiddleware {
         $globalConf   = $this->container->get(ConfigInterface::class);
         $beforeAction = $globalConf->get('apihelper.api.controller_antecedent');
         if (!empty($beforeAction) && method_exists($controllerInstance, $beforeAction)) {
-            $fn = new ReflectionMethod($controllerInstance, $beforeAction);
-
-            if (!$fn->isPublic()) {
-                $cls = get_class($controllerInstance);
-                throw new RuntimeException("{$cls}::{$beforeAction} must be public method.");
-            }
-
-            //检查该方法的参数是否符合要求
-            $paramNum = $fn->getNumberOfParameters();
-            if ($paramNum != 1) {
-                $cls = get_class($controllerInstance);
-                throw new RuntimeException("{$cls}::{$beforeAction} must has only one parameter.");
-            }
-
-            //参数类型是否符合
-            foreach ($fn->getParameters() AS $arg) {
-                if ($arg->getType()->getName() != ServerRequestInterface::class) {
-                    $cls = get_class($controllerInstance);
-                    throw new RuntimeException("{$cls}::{$beforeAction} the parameter type must be " . ServerRequestInterface::class);
-                }
-            }
-
-            //是否有返回值
-            if (!$fn->hasReturnType() || $fn->getReturnType()->getName() != ServerRequestInterface::class) {
-                $cls = get_class($controllerInstance);
-                throw new RuntimeException("{$cls}::{$beforeAction} the return type must be " . ServerRequestInterface::class);
-            }
-
             //先于动作之前调用
             try {
                 $beforeRet = call_user_func_array([$controllerInstance, $beforeAction], [$request]);
@@ -148,84 +124,73 @@ class ApiValidationMiddleware extends CoreMiddleware {
             $request = $beforeRet;
         }
 
-        $annotations = ApiAnnotation::getMethodMetadata($controller, $action);
-        $headerRules = [];
-        $pathRules   = [];
-        $queryRules  = [];
-        $bodyRules   = [];
-        $formRules   = [];
+        $ruleObj = $this->container->get(ApiAnnotation::class)->getRouteCache();
+        $ctrlAct = $controller . Consts::PAAMAYIM_NEKUDOTAYIM . $action;
+        if (isset($ruleObj->$ctrlAct)) {
 
-        foreach ($annotations as $annotation) {
-            $fieldName = ApiAnnotation::getFieldByKey($annotation->key);
+            // 先处理BODY规则
+            $typeBody = BaseObject::getShortName(Body::class);
+            if (isset($ruleObj->$ctrlAct->$typeBody)) {
+                $data = [Body::NAME => $request->getBody()->getContents()];
+                [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeBody, $data, [], $controllerInstance);
+                if ($data === false) {
+                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                }
+                $request = $request->withBody(new SwooleStream($data[Body::NAME] ?? ''));
+            }
 
-            if ($annotation instanceof Header) {
-                $headerRules[$fieldName] = $annotation->rule;
-            }
-            if ($annotation instanceof Path) {
-                $pathRules[$fieldName] = $annotation->rule;
-            }
-            if ($annotation instanceof Query) {
-                $queryRules[$fieldName] = $annotation->rule;
-            }
-            if ($annotation instanceof Body) {
-                $bodyRules = $annotation->rule;
-            }
-            if ($annotation instanceof Form) {
-                $formRules[$fieldName] = $annotation->rule;
-            }
-        }
+            // 各请求方法的数据
+            $headers   = array_map(function ($item) {
+                return $item[0];
+            }, $request->getHeaders());
+            $queryData = $request->getQueryParams();
+            $postData  = $request->getParsedBody();
+            $allData   = array_merge($headers, $queryData, $postData);
 
-        ksort($headerRules);
-        ksort($pathRules);
-        ksort($queryRules);
-        ksort($bodyRules);
-        ksort($formRules);
-
-        // 各请求方法的数据
-        $headers   = array_map(function ($item) {
-            return $item[0];
-        }, $request->getHeaders());
-        $queryData = $request->getQueryParams();
-        $postData  = $request->getParsedBody();
-        $allData   = array_merge($headers, $queryData, $postData);
-
-        if ($headerRules) {
-            [$data, $error] = $this->checkRules($headerRules, $headers, $allData, $controllerInstance);
-            if ($data === false) {
-                return $this->response->json(ApiResponse::doFail([400, $error]));
+            $typeHeader = BaseObject::getShortName(Header::class);
+            if (isset($ruleObj->$ctrlAct->$typeHeader)) {
+                [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeHeader, $headers, $allData, $controllerInstance);
+                if ($data === false) {
+                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                }
             }
-        }
 
-        if ($pathRules) {
-            $pathData = $routes[2] ?? [];
-            [$data, $error] = $this->checkRules($pathRules, $pathData, $allData, $controllerInstance);
-            if ($data === false) {
-                return $this->response->json(ApiResponse::doFail([400, $error]));
+            $typePath = BaseObject::getShortName(Path::class);
+            if (isset($ruleObj->$ctrlAct->$typePath)) {
+                $pathData = $routes[2] ?? [];
+                [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typePath, $pathData, $allData, $controllerInstance);
+                if ($data === false) {
+                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                }
             }
-        }
 
-        if ($queryRules) {
-            [$data, $error] = $this->checkRules($queryRules, $queryData, $allData, $controllerInstance);
-            if ($data === false) {
-                return $this->response->json(ApiResponse::doFail([400, $error]));
+            $typeQuery = BaseObject::getShortName(Query::class);
+            if (isset($ruleObj->$ctrlAct->$typeQuery)) {
+                [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeQuery, $queryData, $allData, $controllerInstance);
+                if ($data === false) {
+                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                }
+                $request = $request->withQueryParams($data);
             }
-            $request = $request->withQueryParams($data);
-        }
 
-        if ($bodyRules) {
-            [$data, $error] = $this->checkRules($bodyRules, (array)json_decode($request->getBody()->getContents(), true), [], $controllerInstance);
-            if ($data === false) {
-                return $this->response->json(ApiResponse::doFail([400, $error]));
+            $typeForm = BaseObject::getShortName(Form::class);
+            if (isset($ruleObj->$ctrlAct->$typeForm)) {
+                [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeForm, $postData, $allData, $controllerInstance);
+                if ($data === false) {
+                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                }
+                $request = $request->withParsedBody($data);
             }
-            $request = $request->withBody(new SwooleStream(json_encode($data)));
-        }
 
-        if ($formRules) {
-            [$data, $error] = $this->checkRules($formRules, $postData, $allData, $controllerInstance);
-            if ($data === false) {
-                return $this->response->json(ApiResponse::doFail([400, $error]));
+            //文件上传
+            $typeFile = BaseObject::getShortName(File::class);
+            if (isset($ruleObj->$ctrlAct->$typeFile)) {
+                [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeFile, $request->getUploadedFiles(), $allData, $controllerInstance);
+                if ($data === false) {
+                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                }
+                $request = $request->withUploadedFiles($data);
             }
-            $request = $request->withParsedBody($data);
         }
 
         Context::set(ServerRequestInterface::class, $request);
@@ -233,28 +198,6 @@ class ApiValidationMiddleware extends CoreMiddleware {
         //执行控制器拦截方法
         $interceptAction = $globalConf->get('apihelper.api.controller_intercept');
         if (!empty($interceptAction) && method_exists($controllerInstance, $interceptAction)) {
-            $fn = new ReflectionMethod($controllerInstance, $interceptAction);
-
-            if (!$fn->isPublic()) {
-                $cls = get_class($controllerInstance);
-                throw new RuntimeException("{$cls}::{$interceptAction} must be public method.");
-            }
-
-            //检查该方法的参数是否符合要求
-            $paramNum = $fn->getNumberOfParameters();
-            if ($paramNum != 3) {
-                $cls = get_class($controllerInstance);
-                throw new RuntimeException("{$cls}::{$interceptAction} must has three parameter.");
-            }
-
-            //参数类型是否符合
-            foreach ($fn->getParameters() AS $arg) {
-                if ($arg->getType()->getName() != 'string') {
-                    $cls = get_class($controllerInstance);
-                    throw new RuntimeException("{$cls}::{$interceptAction} the parameter type must be string");
-                }
-            }
-
             //先于动作之前调用
             try {
                 $ret = call_user_func_array([$controllerInstance, $interceptAction], [$controller, $action, ($routes[1]->route ?? '')]);
@@ -267,7 +210,6 @@ class ApiValidationMiddleware extends CoreMiddleware {
             }
         }
 
-        //TODO withUploadedFiles vendor/hyperf/http-message/src/Server/Request.php
         return $handler->handle($request);
     }
 

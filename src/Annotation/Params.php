@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Administrator
+ * User: kakuilan
  * Date: 2020/3/6
  * Time: 16:32
  * Desc:
@@ -93,6 +93,20 @@ class Params extends AbstractAnnotation {
 
 
     /**
+     * 设置key
+     * @param string $key
+     * @return $this
+     */
+    public function setKey(string $key = '') {
+        if (!empty($key)) {
+            $this->key = $key;
+        }
+
+        return $this;
+    }
+
+
+    /**
      * 设置字段名
      * @param string $name
      * @return $this
@@ -160,8 +174,7 @@ class Params extends AbstractAnnotation {
      * @return $this
      */
     public function setType() {
-        $type = 'string';
-
+        $type = '';
         if (in_array('int', $this->_detailRules) || in_array('integer', $this->_detailRules)) {
             $type = 'integer';
         } elseif (in_array('float', $this->_detailRules)) {
@@ -174,6 +187,10 @@ class Params extends AbstractAnnotation {
             $type = 'array';
         } elseif (in_array('object', $this->_detailRules)) { // object 是swagger的数据类型
             $type = 'object';
+        }
+
+        if(empty($type)) {
+            $type = ApiAnnotation::getTypeByRule($this->rule);
         }
 
         $this->type = $type;

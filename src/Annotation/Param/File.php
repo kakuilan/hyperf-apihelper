@@ -2,8 +2,8 @@
 /**
  * Created by PhpStorm.
  * User: kakuilan
- * Date: 2020/3/9
- * Time: 15:44
+ * Date: 2020/3/24
+ * Time: 17:36
  * Desc:
  */
 
@@ -17,8 +17,8 @@ use Hyperf\Apihelper\Annotation\Params;
  * @Annotation
  * @Target({"METHOD"})
  */
-class Header extends Params {
+class File extends Params {
 
-    public $in = 'header';
+    public $in = 'formData';
 
 }

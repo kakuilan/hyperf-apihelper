@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Administrator
+ * User: kakuilan
  * Date: 2020/3/6
  * Time: 16:13
  * Desc:
@@ -12,7 +12,6 @@ declare(strict_types=1);
 namespace Hyperf\Apihelper\Annotation;
 
 use Hyperf\Di\Annotation\AbstractAnnotation;
-use Hyperf\Utils\Arr;
 use Kph\Helpers\ArrayHelper;
 
 /**
@@ -90,7 +89,7 @@ class ApiResponse extends AbstractAnnotation {
             'status' => true,
             'msg'    => $msg,
             'code'   => 200,
-            'data'   => $result['data']
+            'data'   => $result['data'],
         ];
 
         return $result;
@@ -119,7 +118,7 @@ class ApiResponse extends AbstractAnnotation {
             'status' => false,
             'msg'    => strval($msg),
             'code'   => $codeNo,
-            'data'   => []
+            'data'   => [],
         ];
 
         return $result;

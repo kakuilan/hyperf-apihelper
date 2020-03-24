@@ -68,6 +68,7 @@ use Hyperf\Apihelper\Annotation\Method\Patch;
 use Hyperf\Apihelper\Annotation\Method\Post;
 use Hyperf\Apihelper\Annotation\Method\Put;
 use Hyperf\Apihelper\Annotation\Param\Body;
+use Hyperf\Apihelper\Annotation\Param\File;
 use Hyperf\Apihelper\Annotation\Param\Form;
 use Hyperf\Apihelper\Annotation\Param\Header;
 use Hyperf\Apihelper\Annotation\Param\Path;
@@ -154,13 +155,39 @@ class Test extends BaseController {
     
 
     /**
-     * @Post(path="/arrparam", description="数组形式参数")
+     * @Post(path="/arrparam", description="数组形式参数/多级参数")
      * @Form(key="arr", rule="required|array")
+     * @Form(key="row", rule="object")
+     * @Form(key="row.name", rule="required|string|trim")
+     * @Form(key="row.age", rule="int|gt:0|default:1")
+     * @Form(key="row.addr", rule="string|trim")
      * @ApiResponse(code=200, schema={"$ref":"Response"})
      */
     public function arrparam() {
         $post = $this->request->post();
         return $this->success($post);
+    }
+
+
+    /**
+     * @Post(path="/test/testbody", description="body测试")
+     * @Body(rule="required|json")
+     * @ApiResponse(code=200, schema={"$ref":"Response"})
+     */
+    public function testbody() {
+        return $this->success();
+    }
+
+
+    /**
+     * @Post(path="/test/upload", description="上传测试")
+     * @File(key="sec", rule="required|file|size:1000")
+     * @File(key="img", rule="file|image")
+     * @ApiResponse(code=200, schema={"$ref":"Response"})
+     */
+    public function upload() {
+        $files = $this->request->getUploadedFiles();
+        return $this->success($files);
     }
 
 
@@ -189,7 +216,12 @@ class Test extends BaseController {
   如上例中的cb_chkHello,规则名以cb_开头,后跟控制器的方法名chkHello.  
   验证方法必须定义接受3个参数:$value, $field, $options;  
   返回结果必须是一个数组:  
-  若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.
+  若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.  
+  形如:
+```php
+public function cb_xxx($value, string $field, array $options): array
+```
+
   
 
 ### 响应体结构
@@ -237,7 +269,7 @@ public function interceptor(string $controller, string $action, string $route): 
 ### swagger生成
 
 1.  api请求方法定义 `Get`, `Post`, `Put`, `Patch`, `Delete`
-2.  参数定义 `Header`, `Query`, `Form`, `Body`, `Path`
+2.  参数定义 `Header`, `Query`, `File`, `Form`, `Body`, `Path`
 3.  返回结果定义 `ApiResponse` ,json串,如{"status":true,"msg":"success","code":200,"data":[]}
 4.  ApiVersion接口版本分组并不影响方法里面的实际绑定路由;它只是把控制器里面的接口,归入到某个swagger文件,以便查看.
 5.  生产环境请将配置output_json修改为false,关闭swagger.
@@ -253,17 +285,3 @@ public function interceptor(string $controller, string $action, string $route): 
 ![default](tests/04.jpg)  
 
 ![array](tests/05.jpg)  
-
-
-### 说明
-本组件是参考[apidog](https://github.com/daodao97/apidog)的改写.
-
-
-## TODO
-- swagger更多属性的支持
-- 多层级参数/body参数的校验
-- upload数据校验
-- 支持row[a]键值对数组形式参数
-- swagger body处理
-
-

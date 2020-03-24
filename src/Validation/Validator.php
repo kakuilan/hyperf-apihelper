@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Administrator
+ * User: kakuilan
  * Date: 2020/3/9
  * Time: 16:02
  * Desc:
@@ -19,6 +19,8 @@ use Hyperf\Server\Exception\RuntimeException;
 use Hyperf\Utils\Arr;
 use Hyperf\Validation\Concerns\ValidatesAttributes;
 use Hyperf\Validation\Contract\ValidatorFactoryInterface;
+use Kph\Helpers\ArrayHelper;
+use Kph\Helpers\StringHelper;
 use Kph\Helpers\ValidateHelper;
 
 
@@ -108,44 +110,87 @@ class Validator implements ValidationInterface {
     }
 
 
+    /**
+     * 进行验证
+     * @param array $rules
+     * @param array $data
+     * @param array $otherData
+     * @param object|null $controller
+     * @return array
+     * @throws ValidationException
+     */
     public function validate(array $rules, array $data, array $otherData = [], object $controller = null): array {
-        $hyperfRules = []; //hyperf本身的验证器规则
-        $customRules = []; //本组件的扩展验证规则
+        $hyperfRules = $rules['hyperfs'] ?? []; //hyperf本身的验证器规则
+        $customRules = $rules['customs'] ?? []; //本组件的扩展验证规则
         $allData     = array_merge($otherData, $data);
 
-        foreach ($rules as $field => $rule) {
-            $detailRules = self::sortDetailRules(explode('|', $rule));
-            $arr1        = $arr2 = [];
+        //先执行hyperf的验证
+        $validator = $this->validator->make($allData, $hyperfRules);
+        $newData   = $validator->validate();
+        $data      = self::combineData($data, $newData);
 
+        //再执行自定义验证
+        foreach ($customRules as $field => $customRule) {
+            if (empty($customRule)) {
+                continue;
+            }
+
+            //$field字段可能存在多级,如row.name
+            $fieldValue  = ArrayHelper::getDotKey($allData, $field, null);
+            $detailRules = explode('|', $customRule);
             foreach ($detailRules as $detailRule) {
                 $ruleName = ApiAnnotation::parseRuleName($detailRule);
 
-                //是否本组件的转换器
-                $convMethod = 'conver_' . $ruleName;
-                if (method_exists($this, $convMethod)) {
-                    array_push($arr1, $detailRule);
+                $optionStr = explode(':', $detailRule)[1] ?? '';
+                $optionArr = explode(',', $optionStr);
+                if ($optionStr == '' && empty($optionArr)) {
+                    array_push($optionArr, '');
                 }
 
-                //是否本组件的验证规则
+                $convMethod = 'conver_' . $ruleName;
+                if (method_exists($this, $convMethod)) {
+                    $fieldValue = call_user_func_array([$this, $convMethod,], [$fieldValue, $optionArr]);
+                }
+
                 $ruleMethod = 'rule_' . $ruleName;
                 if (method_exists($this, $ruleMethod)) {
-                    array_push($arr1, $detailRule);
+                    $check = call_user_func_array([$this, $ruleMethod,], [$fieldValue, $field, $optionArr]);
+                    if (!$check) {
+                        break;
+                    }
                 }
 
                 // cb_xxx,调用控制器的方法xxx
-                $controllerMethod = str_replace(self::$validateCallbackPrefix, '', $ruleName);
-                if (strpos($ruleName, self::$validateCallbackPrefix) !== false && method_exists($controller, $controllerMethod)) {
-                    array_push($arr1, $detailRule);
-                    continue;
+                // xxx方法,接受3个参数:$fieldValue, $field, $optionArr;
+                // 返回结果是一个数组:若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.
+                $controllerMethod = str_replace(Validator::$validateCallbackPrefix, '', $ruleName);
+                if (strpos($ruleName, Validator::$validateCallbackPrefix) !== false && method_exists($controller, $controllerMethod)) {
+                    $chkRes = call_user_func_array([$controller, $controllerMethod,], [$fieldValue, $field, $optionArr]);
+
+                    //检查回调结果
+                    if (!is_array($chkRes) || count($chkRes) != 2 || !isset($chkRes[0]) || !isset($chkRes[1]) || !is_bool($chkRes[0])) {
+                        $msg = $this->translator->trans('apihelper.rule_callback_error_result', ['rule' => $controllerMethod]);
+                        throw new ValidationException($msg);
+                    }
+
+                    [$chk, $val] = $chkRes;
+                    if ($chk !== true) {
+                        $this->errors[] = strval($val);
+                    } elseif (!is_null($val)) {
+                        $fieldValue = $val;
+                    }
                 }
-
-
             }
 
+            ArrayHelper::setDotKey($data, $field, $fieldValue);
         }
 
+        $this->errors = array_merge($this->errors, $validator->errors()->getMessages());
+        if ($this->errors) {
+            return [];
+        }
 
-        return [];
+        return $data;
     }
 
 
@@ -156,5 +201,188 @@ class Validator implements ValidationInterface {
     public function getError(): array {
         return $this->errors;
     }
+
+
+    /**
+     * 转换器-默认值
+     * @param $val
+     * @param array $options
+     * @return array|mixed
+     */
+    public static function conver_default($val, array $options = []) {
+        if ((is_null($val) || $val == '') && !empty($options)) {
+            $len = count($options);
+            $val = $len == 1 ? current($options) : $options;
+        }
+
+        return $val;
+    }
+
+
+    /**
+     * 转换器-整型
+     * @param $val
+     * @return int
+     */
+    public static function conver_int($val): int {
+        return intval($val);
+    }
+
+
+    /**
+     * 转换器-整型
+     * @param $val
+     * @return int
+     */
+    public static function conver_integer($val): int {
+        return intval($val);
+    }
+
+
+    /**
+     * 转换器-浮点
+     * @param $val
+     * @return float
+     */
+    public static function conver_float($val): float {
+        return floatval($val);
+    }
+
+
+    /**
+     * 转换器-布尔值
+     * @param $val
+     * @return bool
+     */
+    public static function conver_boolean($val): bool {
+        if (empty($val) || in_array(strtolower($val), ['false', 'null', 'nil', 'none', '0',])) {
+            return false;
+        } elseif (in_array(strtolower($val), ['true', '1',])) {
+            return true;
+        }
+
+        return boolval($val);
+    }
+
+
+    /**
+     * 转换器-布尔值
+     * @param $val
+     * @return bool
+     */
+    public function conver_bool($val): bool {
+        return self::conver_boolean($val);
+    }
+
+
+    /**
+     * 转换器-去掉空格
+     * @param $val
+     * @return string
+     */
+    public function conver_trim($val): string {
+        return StringHelper::trim(strval($val));
+    }
+
+
+    /**
+     * 验证-枚举
+     * @param $val
+     * @param string $field
+     * @param array $options
+     * @return bool
+     */
+    public function rule_enum($val, string $field, array $options = []): bool {
+        if (empty($options)) {
+            return true;
+        }
+
+        $chk = $val !== '' && in_array($val, $options);
+        if (!$chk) {
+            $this->errors[] = $this->translator->trans('apihelper.rule_enum', ['field' => $field, 'values' => implode(',', $options)]);
+        }
+
+        return boolval($chk);
+    }
+
+
+    /**
+     * 验证-对象(键值对数组)
+     * @param $val
+     * @param string $field
+     * @param array $options
+     * @return bool
+     */
+    public function rule_object($val, string $field, array $options = []): bool {
+        // 必须是数组
+        if (!is_array($val)) {
+            $this->errors[] = $this->translator->trans('apihelper.rule_object', ['field' => $field]);
+            return false;
+        }
+
+        // 键值不能是数字
+        $keys = array_keys($val);
+        foreach ($keys as $key) {
+            if (is_integer($key)) {
+                $this->errors[] = $this->translator->trans('apihelper.rule_object', ['field' => $field]);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    /**
+     * 验证-自然数
+     * @param $val
+     * @param string $field
+     * @param array $options
+     * @return bool
+     */
+    public function rule_natural($val, string $field, array $options = []): bool {
+        $chk = ValidateHelper::isNaturalNum($val);
+        if (!$chk) {
+            $this->errors[] = $this->translator->trans('apihelper.rule_natural', ['field' => $field]);
+        }
+
+        return boolval($chk);
+    }
+
+
+    /**
+     * 验证-中国手机号
+     * @param $val
+     * @param string $field
+     * @param array $options
+     * @return bool
+     */
+    public function rule_cnmobile($val, string $field, array $options = []): bool {
+        $chk = ValidateHelper::isMobilecn($val);
+        if (!$chk) {
+            $this->errors[] = $this->translator->trans('apihelper.rule_cnmobile', ['field' => $field]);
+        }
+
+        return boolval($chk);
+    }
+
+
+    /**
+     * 验证-安全密码
+     * @param $val
+     * @param string $field
+     * @param array $options
+     * @return bool
+     */
+    public function rule_safe_password($val, string $field, array $options = []): bool {
+        $level = StringHelper::passwdSafeGrade($val);
+        if ($level < 2) {
+            $this->errors[] = $this->translator->trans('apihelper.rule_safe_password_simple', ['field' => $field]);
+            return false;
+        }
+
+        return true;
+    }
+
 
 }

@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Administrator
+ * User: kakuilan
  * Date: 2020/3/6
  * Time: 16:11
  * Desc:
@@ -21,12 +21,14 @@ class ApiController extends Controller {
 
 
     /**
-     * @var string 分组标签
+     * 分组标签
+     * @var string
      */
     public $tag;
 
 
     /**
+     * 路由前缀
      * @var string
      */
     public $prefix = '';

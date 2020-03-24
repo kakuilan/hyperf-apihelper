@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: Administrator
+ * User: kakuilan
  * Date: 2020/3/6
  * Time: 16:34
  * Desc:
@@ -12,8 +12,8 @@ declare(strict_types=1);
 namespace Hyperf\Apihelper;
 
 use ArrayAccess;
-use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationException;
+use Doctrine\Common\Annotations\AnnotationReader;
 use Hyperf\Apihelper\Annotation\ApiController;
 use Hyperf\Apihelper\Annotation\ApiVersion;
 use Hyperf\Di\Annotation\AnnotationCollector;
@@ -22,7 +22,30 @@ use Kph\Helpers\StringHelper;
 use Kph\Helpers\ValidateHelper;
 
 
+/**
+ * Class ApiAnnotation
+ * @package Hyperf\Apihelper
+ */
 class ApiAnnotation {
+
+
+    /**
+     * 路由规则缓存,形如
+     * //    $arr = [
+     * //        'class::method' => [
+     * //            'hyperfs' => [
+     * //                'field1' => [
+     * //                    'detailRule1',
+     * //                    'detailRule2',
+     * //                ],
+     * //                'field2' => [],
+     * //            ],
+     * //            'customs' => [],
+     * //        ],
+     * //    ];
+     * @var object
+     */
+    private $routeCache = null;
 
 
     /**
@@ -146,6 +169,8 @@ class ApiAnnotation {
             return 'array';
         } elseif (array_intersect($details, ['object'])) {
             return 'object';
+        } elseif (array_intersect($details, ['file','image'])) {
+            return 'file';
         } elseif ($digitItem) {
             foreach ($details as $detail) {
                 if (strpos($detail, ':') && stripos($detail, $digitItem) !== false) {
@@ -165,6 +190,26 @@ class ApiAnnotation {
         }
 
         return 'string';
+    }
+
+
+    /**
+     * 设置路由缓存
+     * @param object $cache
+     */
+    public function setRouteCache(object $cache): void {
+        if (!is_null($cache) && !ValidateHelper::isEmptyObject($cache)) {
+            $this->routeCache = $cache;
+        }
+    }
+
+
+    /**
+     * 获取路由缓存
+     * @return object
+     */
+    public function getRouteCache(): object {
+        return $this->routeCache;
     }
 
 
