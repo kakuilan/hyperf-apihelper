@@ -240,6 +240,7 @@ class Swagger {
 
             //这里的对象,是键值对数组
             if ($item->type == 'object') {
+                //若有下级参数,则不显示父级参数
                 if (self::hasDotSubParamter($params, $item->name)) {
                     continue;
                 }
