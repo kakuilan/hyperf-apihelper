@@ -141,7 +141,7 @@ class Test extends BaseController {
      * @Query(key="len|验证码长度", rule="int|gt:0|max:10|default:6")
      * @Query(key="type|验证码类型", rule="int|default:0|enum:0,1,2,3,4,5")
      * @Query(key="width|图片宽度", rule="int|gt:1|default:100")
-     * @Query(key="height|图片高低", rule="int|gt:1|default:30")
+     * @Query(key="height|图片高度", rule="int|gt:1|default:30")
      * @ApiResponse(code=200, schema={"$ref":"Response"})
      */
     public function create() {
