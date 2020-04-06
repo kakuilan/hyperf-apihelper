@@ -11,13 +11,13 @@ hyperf api and swagger helper.
 
 
 ### 安装
-- 指定站点目录为 BASE_PATH/public,swagger-ui将自动发布到该目录下
+- nginx(或apache)指定站点目录为 BASE_PATH/public, swagger-ui将自动发布到该目录下
 - 安装组件
 ```sh
-# 安装依赖组件
+# composer安装本组件
 composer require kakuilan/hyperf-apihelper
 
-# 发布组件初始化配置文件
+# 发布组件初始化配置文件到你的项目下
 php bin/hyperf.php vendor:publish kakuilan/hyperf-apihelper
 ```
 
@@ -48,7 +48,7 @@ return [
 ```php
 return [
     'dependencies' => [
-        Hyperf\HttpServer\Router\DispatcherFactory::class => Hyperf\Apihelper\DispathcerFactory::class
+        Hyperf\HttpServer\Router\DispatcherFactory::class => Hyperf\Apihelper\DispatcherFactory::class
     ],
 ];
 ```
