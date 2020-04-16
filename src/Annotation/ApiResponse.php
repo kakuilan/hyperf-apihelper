@@ -40,17 +40,6 @@ class ApiResponse extends AbstractAnnotation {
 
 
     /**
-     * @var array 接口响应的基本json结构
-     */
-    public static $baseSchema = [
-        'status' => true,
-        'msg'    => 'success',
-        'code'   => 200,
-        'data'   => [],
-    ];
-
-
-    /**
      * ApiResponse constructor.
      * @param null $value
      */
@@ -59,69 +48,6 @@ class ApiResponse extends AbstractAnnotation {
         if (is_array($this->description)) {
             $this->description = json_encode($this->description, JSON_UNESCAPED_UNICODE);
         }
-    }
-
-
-    /**
-     * 处理接口成功数据
-     * @param array|mixed $data
-     * @param string $msg
-     * @param array $result
-     * @return array
-     */
-    final public static function doSuccess($data = [], string $msg = 'success', array $result = []): array {
-        if (empty($result)) {
-            $result = self::$baseSchema;
-        }
-
-        if (is_bool($data)) {
-            $result['data'] = [];
-        } elseif (is_object($data)) {
-            $data           = ArrayHelper::object2Array($data);
-            $result['data'] = array_merge((array)$result['data'], $data);
-        } elseif (is_array($data)) {
-            $result['data'] = array_merge((array)$result['data'], $data);
-        } else {
-            $result['data'] = strval($data);
-        }
-
-        $result = [
-            'status' => true,
-            'msg'    => $msg,
-            'code'   => 200,
-            'data'   => $result['data'],
-        ];
-
-        return $result;
-    }
-
-
-    /**
-     * 处理接口失败数据
-     * @param string|array $code 错误码(如400);或错误信息数组[错误码,提示信息],如 [400, '操作失败']
-     * @param array $trans 翻译数组
-     * @return array
-     */
-    final public static function doFail($code = '400', array $trans = []): array {
-        if (is_array($code)) {
-            $msg  = end($code);
-            $code = reset($code);
-        } elseif (is_numeric($code)) {
-            $msg = trans("apihelper.{$code}", $trans);
-        } else {
-            $msg = $code;
-        }
-
-        $codeNo = ($code != $msg && is_numeric($code)) ? intval($code) : 400;
-
-        $result = [
-            'status' => false,
-            'msg'    => strval($msg),
-            'code'   => $codeNo,
-            'data'   => [],
-        ];
-
-        return $result;
     }
 
 }

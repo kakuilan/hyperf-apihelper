@@ -176,6 +176,7 @@ class Validator implements ValidationInterface {
                     [$chk, $val] = $chkRes;
                     if ($chk !== true) {
                         $this->errors[] = strval($val);
+                        break;
                     } elseif (!is_null($val)) {
                         $fieldValue = $val;
                     }
@@ -361,6 +362,23 @@ class Validator implements ValidationInterface {
         $chk = ValidateHelper::isMobilecn($val);
         if (!$chk) {
             $this->errors[] = $this->translator->trans('apihelper.rule_cnmobile', ['field' => $field]);
+        }
+
+        return boolval($chk);
+    }
+
+
+    /**
+     * 验证-中国身份证号
+     * @param $val
+     * @param string $field
+     * @param array $options
+     * @return bool
+     */
+    public function rule_cncreditno($val, string $field, array $options = []): bool {
+        $chk = ValidateHelper::isChinaCreditNo($val);
+        if (!$chk) {
+            $this->errors[] = $this->translator->trans('apihelper.rule_cncreditno', ['field' => $field]);
         }
 
         return boolval($chk);

@@ -169,7 +169,7 @@ class ApiAnnotation {
             return 'array';
         } elseif (array_intersect($details, ['object'])) {
             return 'object';
-        } elseif (array_intersect($details, ['file','image'])) {
+        } elseif (array_intersect($details, ['file', 'image'])) {
             return 'file';
         } elseif ($digitItem) {
             foreach ($details as $detail) {
@@ -187,6 +187,30 @@ class ApiAnnotation {
                     }
                 }
             }
+        }
+
+        return 'string';
+    }
+
+
+    /**
+     * 根据值获取类型
+     * @param $value
+     * @return string
+     */
+    public static function getTypeByValue($value): string {
+        if (ValidateHelper::isInteger($value)) {
+            return 'integer';
+        } elseif (ValidateHelper::isFloat($value)) {
+            return 'float';
+        } elseif (is_numeric($value)) {
+            return 'number';
+        } elseif (is_bool($value)) {
+            return 'boolean';
+        } elseif (is_array($value)) {
+            return 'array';
+        } elseif (is_object($value)) {
+            return 'object';
         }
 
         return 'string';

@@ -22,6 +22,7 @@ use Hyperf\Apihelper\Annotation\Param\Path;
 use Hyperf\Apihelper\Annotation\Param\Query;
 use Hyperf\Apihelper\Annotation\Params;
 use Hyperf\Apihelper\ApiAnnotation;
+use Hyperf\Apihelper\Controller\ControllerInterface;
 use Hyperf\Apihelper\Exception\ValidationException;
 use Hyperf\Apihelper\Swagger\Swagger;
 use Hyperf\Apihelper\Validation\Validator;
@@ -88,8 +89,11 @@ class DispatcherFactory extends BaseDispatcherFactory {
      * 初始化配置
      */
     private function initConfig() {
-        $path         = BASE_PATH . '/config/autoload/apihelper.php';
-        $this->config = new Config([$path]);
+        if (is_null($this->config)) {
+            $path         = BASE_PATH . '/config/autoload/apihelper.php';
+            $conf         = require $path;
+            $this->config = new Config($conf);
+        }
     }
 
 
@@ -108,6 +112,14 @@ class DispatcherFactory extends BaseDispatcherFactory {
      * @throws ReflectionException
      */
     protected function initAnnotationRoute(array $collector): void {
+        //检查基本控制器配置
+        $baseCtrlClass = $this->config->get('api.base_controller');
+        if (empty($baseCtrlClass)) {
+            throw new RuntimeException("api.base_controller can not be empty.");
+        } elseif (!class_exists($baseCtrlClass)) {
+            throw new RuntimeException("class: {$baseCtrlClass} does not exist.");
+        }
+
         $routes = [];
         foreach ($collector as $className => $metadata) {
             //是否控制器
@@ -129,6 +141,16 @@ class DispatcherFactory extends BaseDispatcherFactory {
      * @throws ReflectionException
      */
     private function parseController(string $className): void {
+        // 检查是否继承自基本控制器,以及控制器接口
+        $ctrlObj       = new $className();
+        $baseCtrlClass = $this->config->get('api.base_controller');
+        $beforeAction  = $this->config->get('api.controller_antecedent');
+        if (!($ctrlObj instanceof $baseCtrlClass)) {
+            throw new RuntimeException("{$className} must extends from {$baseCtrlClass}.");
+        } elseif (!($ctrlObj instanceof ControllerInterface)) {
+            throw new RuntimeException("{$baseCtrlClass} must implements " . ControllerInterface::class);
+        }
+
         // 检查控制器前置方法
         $beforeAction = $this->config->get('apihelper.api.controller_antecedent');
         if (!empty($beforeAction) && method_exists($className, $beforeAction)) {
@@ -190,7 +212,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
                 continue;
             }
 
-            $rules   = [];
+            $rules = [];
             foreach ($annos as $anno) {
                 //解析请求参数规则
                 if ($anno instanceof Params) {

@@ -124,17 +124,17 @@ class ApiValidationMiddleware extends CoreMiddleware {
             $request = $beforeRet;
         }
 
-        $ruleObj = $this->container->get(ApiAnnotation::class)->getRouteCache();
-        $ctrlAct = $controller . Consts::PAAMAYIM_NEKUDOTAYIM . $action;
+        $ruleObj       = $this->container->get(ApiAnnotation::class)->getRouteCache();
+        $ctrlAct       = $controller . Consts::PAAMAYIM_NEKUDOTAYIM . $action;
+        $baseCtrlClass = $globalConf->get('apihelper.api.base_controller');
         if (isset($ruleObj->$ctrlAct)) {
-
             // 先处理BODY规则
             $typeBody = BaseObject::getShortName(Body::class);
             if (isset($ruleObj->$ctrlAct->$typeBody)) {
                 $data = [Body::NAME => $request->getBody()->getContents()];
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeBody, $data, [], $controllerInstance);
-                if ($data === false) {
-                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                if (!empty($error)) {
+                    return $this->response->json($baseCtrlClass::doValidationFail($error));
                 }
                 $request = $request->withBody(new SwooleStream($data[Body::NAME] ?? ''));
             }
@@ -150,8 +150,8 @@ class ApiValidationMiddleware extends CoreMiddleware {
             $typeHeader = BaseObject::getShortName(Header::class);
             if (isset($ruleObj->$ctrlAct->$typeHeader)) {
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeHeader, $headers, $allData, $controllerInstance);
-                if ($data === false) {
-                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                if (!empty($error)) {
+                    return $this->response->json($baseCtrlClass::doValidationFail($error));
                 }
             }
 
@@ -159,16 +159,16 @@ class ApiValidationMiddleware extends CoreMiddleware {
             if (isset($ruleObj->$ctrlAct->$typePath)) {
                 $pathData = $routes[2] ?? [];
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typePath, $pathData, $allData, $controllerInstance);
-                if ($data === false) {
-                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                if (!empty($error)) {
+                    return $this->response->json($baseCtrlClass::doValidationFail($error));
                 }
             }
 
             $typeQuery = BaseObject::getShortName(Query::class);
             if (isset($ruleObj->$ctrlAct->$typeQuery)) {
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeQuery, $queryData, $allData, $controllerInstance);
-                if ($data === false) {
-                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                if (!empty($error)) {
+                    return $this->response->json($baseCtrlClass::doValidationFail($error));
                 }
                 $request = $request->withQueryParams($data);
             }
@@ -176,8 +176,8 @@ class ApiValidationMiddleware extends CoreMiddleware {
             $typeForm = BaseObject::getShortName(Form::class);
             if (isset($ruleObj->$ctrlAct->$typeForm)) {
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeForm, $postData, $allData, $controllerInstance);
-                if ($data === false) {
-                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                if (!empty($error)) {
+                    return $this->response->json($baseCtrlClass::doValidationFail($error));
                 }
                 $request = $request->withParsedBody($data);
             }
@@ -186,8 +186,8 @@ class ApiValidationMiddleware extends CoreMiddleware {
             $typeFile = BaseObject::getShortName(File::class);
             if (isset($ruleObj->$ctrlAct->$typeFile)) {
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeFile, $request->getUploadedFiles(), $allData, $controllerInstance);
-                if ($data === false) {
-                    return $this->response->json(ApiResponse::doFail([400, $error]));
+                if (!empty($error)) {
+                    return $this->response->json($baseCtrlClass::doValidationFail($error));
                 }
                 $request = $request->withUploadedFiles($data);
             }

@@ -15,6 +15,7 @@ return [
     'rule_safe_password_simple'  => ':field 密码太简单，必须包含数字、大小写字母、其它符号中的三种及以上',
     'rule_natural'               => ':field 不是合法的自然数',
     'rule_cnmobile'              => ':field 不是合法的手机号',
+    'rule_cncreditno'            => ':field 不是合法的身份证号',
     'rule_enum'                  => ':field 必须是 :values 其中之一',
     'rule_object'                => ':field 必须是对象(键值对数组)',
 

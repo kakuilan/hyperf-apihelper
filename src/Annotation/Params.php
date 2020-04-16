@@ -189,7 +189,7 @@ class Params extends AbstractAnnotation {
             $type = 'object';
         }
 
-        if(empty($type)) {
+        if (empty($type)) {
             $type = ApiAnnotation::getTypeByRule($this->rule);
         }
 

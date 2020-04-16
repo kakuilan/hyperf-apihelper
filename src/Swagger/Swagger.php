@@ -17,14 +17,15 @@ use Hyperf\Apihelper\Annotation\Methods;
 use Hyperf\Apihelper\Annotation\Param\Body;
 use Hyperf\Apihelper\Annotation\Params;
 use Hyperf\Apihelper\ApiAnnotation;
+use Hyperf\Apihelper\Controller\ControllerInterface;
 use Hyperf\Contract\ConfigInterface;
+use Hyperf\Server\Exception\RuntimeException;
 use Hyperf\Utils\ApplicationContext;
 use Kph\Helpers\ArrayHelper;
 use Kph\Helpers\DirectoryHelper;
 use Kph\Helpers\FileHelper;
 use Kph\Helpers\UrlHelper;
 use Kph\Helpers\ValidateHelper;
-use RuntimeException;
 
 
 /**
@@ -69,17 +70,33 @@ class Swagger {
      * 初始化常用模型定义
      */
     public function initDefinitions() {
+        //基本响应体
+        $baseCtrl = $this->confGlobal->get('apihelper.api.base_controller');
+        if(!method_exists($baseCtrl, 'getResponseSchema')) {
+            throw new RuntimeException("{$baseCtrl} must implements " . ControllerInterface::class);
+        }
+
+        $baseSchema = $baseCtrl::getResponseSchema();
+        $properties = [];
+        foreach ($baseSchema as $key => $val) {
+            $item = [
+                'type'    => ApiAnnotation::getTypeByValue($val),
+                'example' => is_array($val) ? [] : (is_object($val) ? new \stdClass() : $val),
+            ];
+            if ($item['type'] === 'integer') {
+                $item['format'] = 'int64';
+            }
+
+            $properties[$key] = $item;
+        }
+
         $response = [
             'type'       => 'object',
             'required'   => [],
-            'properties' => [
-                'status' => ['type' => 'boolean', 'example' => true,],
-                'msg'    => ['type' => 'string', 'example' => 'success',],
-                'code'   => ['type' => 'integer', 'format' => 'int64', 'example' => 200,],
-                'data'   => ['type' => 'array', 'example' => [],],],
+            'properties' => $properties,
         ];
 
-        $this->confSwagger['definitions']['Response']    = $response;
+        $this->confSwagger['definitions']['Response'] = $response;
     }
 
 

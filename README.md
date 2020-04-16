@@ -8,6 +8,7 @@ hyperf api and swagger helper.
 - 支持restful path路由参数校验.
 - 支持自定义前置动作.
 - 支持自定义拦截动作.
+- 支持自定义响应体结构.
 
 
 ### 安装
@@ -73,9 +74,8 @@ use Hyperf\Apihelper\Annotation\Param\Form;
 use Hyperf\Apihelper\Annotation\Param\Header;
 use Hyperf\Apihelper\Annotation\Param\Path;
 use Hyperf\Apihelper\Annotation\Param\Query;
-use Hyperf\Apihelper\BaseController;
-use Hyperf\Validation\Validator;
-
+use Hyperf\Apihelper\Controller\BaseController;
+use Hyperf\Apihelper\Exception\ValidationException;
 
 /**
  * @ApiController(tag="测试实例", description="测试例子")
@@ -93,8 +93,11 @@ class Test extends BaseController {
      * @ApiResponse(code=200, schema={"$ref":"Response"})
      */
     public function get() {
-        //return ApiResponse::doFail([]);
-        return ApiResponse::doSuccess([]);
+        //失败
+        //return self::doFail();
+
+        //成功
+        return self::doSuccess();
     }
 
 
@@ -105,12 +108,12 @@ class Test extends BaseController {
      */
     public function info() {
         $data = [
-            'id' => $this->request->route('id')
+            'id' => $this->request->route('id'),
         ];
-        return ApiResponse::doSuccess($data);
+        return self::doSuccess($data);
     }
-    
-    
+
+
     /**
      * 检查输入字段
      * @param mixed $value 字段值
@@ -118,12 +121,12 @@ class Test extends BaseController {
      * @param array $options 参数选项
      * @return array
      */
-    public function chkHello($value, string $field, array $options) {
+    public function chkHello($value, string $field, array $options): array {
         $res = [
             true,
             $value,
         ];
-        if(!true) {
+        if (!true) {
             $res = [
                 false,
                 '具体验证失败的信息',
@@ -137,7 +140,7 @@ class Test extends BaseController {
     /**
      * @Get(description="生成验证码")
      * @Header(key="authorization|访问令牌", rule="required_without_all:access_token")
-     * @Query(key="access_token|访问令牌", rule="required_without_all:authorization")     
+     * @Query(key="access_token|访问令牌", rule="required_without_all:authorization")
      * @Query(key="len|验证码长度", rule="int|gt:0|max:10|default:6")
      * @Query(key="type|验证码类型", rule="int|default:0|enum:0,1,2,3,4,5")
      * @Query(key="width|图片宽度", rule="int|gt:1|default:100")
@@ -145,14 +148,14 @@ class Test extends BaseController {
      * @ApiResponse(code=200, schema={"$ref":"Response"})
      */
     public function create() {
-        $len = $this->request->query('len');
-        $type = $this->request->query('type');
-        $width = $this->request->query('width');
+        $len    = $this->request->query('len');
+        $type   = $this->request->query('type');
+        $width  = $this->request->query('width');
         $height = $this->request->query('height');
 
-        return $this->success([]);
+        return self::doSuccess();
     }
-    
+
 
     /**
      * @Post(path="/arrparam", description="数组形式参数/多级参数")
@@ -165,17 +168,50 @@ class Test extends BaseController {
      */
     public function arrparam() {
         $post = $this->request->post();
-        return $this->success($post);
+        return self::doSuccess($post);
     }
 
 
     /**
      * @Post(path="/test/testbody", description="body测试")
-     * @Body(rule="required|json")
+     * @Body(rule="required|json|cb_parseBody")
      * @ApiResponse(code=200, schema={"$ref":"Response"})
      */
     public function testbody() {
-        return $this->success();
+        return self::doSuccess(date('Y-m-d H:i:s'));
+    }
+
+
+    /**
+     * 自定义解析body数据
+     * @param mixed $value 字段值
+     * @param string $field 字段名
+     * @param array $options 参数选项
+     * @return array
+     * @throws ValidationException
+     */
+    public function parseBody($value, string $field, array $options): array {
+        $arr = json_decode($value, true);
+        $res = [
+            true,
+            $value,
+        ];
+
+        //检查
+        //        if (!isset($arr['hello'])) {
+        //            $res = [
+        //                false,
+        //                'body必须包含hello字段',
+        //            ];
+        //            return $res;
+        //        }
+
+        //或者
+        if (!isset($arr['world'])) {
+            throw new ValidationException('body必须包含world字段');
+        }
+
+        return $res;
     }
 
 
@@ -187,7 +223,7 @@ class Test extends BaseController {
      */
     public function upload() {
         $files = $this->request->getUploadedFiles();
-        return $this->success($files);
+        return self::doSuccess($files);
     }
 
 
@@ -209,6 +245,7 @@ class Test extends BaseController {
     - safe_password,检查是否安全密码
     - natural,检查是否自然数
     - cnmobile,检查是否中国手机号
+    - cncreditno,检查是否中国身份证号
     - enum,检查参数值是否枚举值中的一个
     
   - 控制器验证方法.  

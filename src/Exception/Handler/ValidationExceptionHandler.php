@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 namespace Hyperf\Apihelper\Exception\Handler;
 
-use Hyperf\Apihelper\Annotation\ApiResponse;
 use Hyperf\Apihelper\Exception\ValidationException as MyValidationException;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\Di\Annotation\Inject;
@@ -45,16 +44,17 @@ class ValidationExceptionHandler extends ExceptionHandler {
      */
     public function handle(Throwable $throwable, ResponseInterface $response) {
         $conf            = $this->container->get(ConfigInterface::class);
+        $baseCtrlClass   = $conf->get('apihelper.api.base_controller');
         $showDetailError = $conf->get('apihelper.api.show_params_detail_error');
 
         $this->stopPropagation();
 
         if ($throwable instanceof HyperfValidationException) {
-            $res = $showDetailError ? ApiResponse::doFail([400, $throwable->validator->errors()->first()]) : ApiResponse::doFail(412);
+            $res = $showDetailError ? $baseCtrlClass::doValidationFail($throwable->validator->errors()->first()) : $baseCtrlClass::doValidationFail();
         } elseif ($throwable instanceof MyValidationException) {
-            $res = $showDetailError ? ApiResponse::doFail([400, $throwable->getMessage()]) : ApiResponse::doFail(412);
+            $res = $showDetailError ? $baseCtrlClass::doValidationFail($throwable->getMessage()) : $baseCtrlClass::doValidationFail();
         } else {
-            $res = $showDetailError ? ApiResponse::doFail([400, Consts::UNKNOWN]) : ApiResponse::doFail(412);
+            $res = $showDetailError ? $baseCtrlClass::doValidationFail(Consts::UNKNOWN) : $baseCtrlClass::doValidationFail();
         }
 
         return $response->withBody(new SwooleStream(json_encode($res)));
