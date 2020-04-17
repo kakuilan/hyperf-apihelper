@@ -71,12 +71,14 @@ class Swagger {
      */
     public function initDefinitions() {
         //基本响应体
-        $baseCtrl = $this->confGlobal->get('apihelper.api.base_controller');
-        if(!method_exists($baseCtrl, 'getResponseSchema')) {
-            throw new RuntimeException("{$baseCtrl} must implements " . ControllerInterface::class);
+        $baseCtrlClass = $this->confGlobal->get('apihelper.api.base_controller');
+        if (empty($baseCtrlClass)) {
+            throw new RuntimeException("apihelper.api.base_controller can not be empty.");
+        } elseif(!method_exists($baseCtrlClass, 'getResponseSchema')) {
+            throw new RuntimeException("{$baseCtrlClass} must implements " . ControllerInterface::class);
         }
 
-        $baseSchema = $baseCtrl::getResponseSchema();
+        $baseSchema = $baseCtrlClass::getResponseSchema();
         $properties = [];
         foreach ($baseSchema as $key => $val) {
             $item = [

@@ -91,7 +91,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
     private function initConfig() {
         if (is_null($this->config)) {
             $path         = BASE_PATH . '/config/autoload/apihelper.php';
-            $conf         = require $path;
+            $conf         = file_exists($path) ? include $path : [];
             $this->config = new Config($conf);
         }
     }
