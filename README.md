@@ -6,9 +6,9 @@ hyperf api and swagger helper.
 - 生成json文件,供swagger接口文档测试使用,可打开或关闭.
 - swagger支持接口多版本分组管理.
 - 支持restful path路由参数校验.
+- 支持自定义响应体结构.
 - 支持自定义前置动作.
 - 支持自定义拦截动作.
-- 支持自定义响应体结构.
 
 
 ### 安装
@@ -25,7 +25,7 @@ php bin/hyperf.php vendor:publish kakuilan/hyperf-apihelper
 
 
 ### 配置
-- 修改config/autoload/apihelper.php中的配置,将host改为你的域名,如test.com,则接口文档地址为test.com/swagger
+- 修改config/autoload/apihelper.php中的配置,将`host`改为你的域名,如test.com,则接口文档地址为test.com/swagger
 - 修改config/autoload/middlewares.php中间件配置,如
 ```php
 return [
@@ -232,7 +232,7 @@ class Test extends BaseController {
 
 
 ### 验证规则
-- 先执行Hyperf官方规则,详见[hyperf validation](https://hyperf.wiki/#/zh-cn/validation)
+- 组件会先执行Hyperf官方规则,详见[hyperf validation](https://hyperf.wiki/#/zh-cn/validation)
 - 再执行本组件的验证规则,包括:  
   - 转换器,有
     - default,将参数值设为指定的默认值
@@ -259,14 +259,29 @@ class Test extends BaseController {
     public function fn($value, string $field, array $options): array
     ```
 
-  
 
-### 响应体结构
-
+### 默认响应体结构
 - 接口操作成功,返回{"status":true,"msg":"success","code":200,"data":[]}
 - 接口操作失败,返回{"status":false,"msg":"fail","code":400,"data":[]}
-- 自定义响应体结构,可参考ApiValidationMiddleware和ValidationExceptionHandler,重写你自己的中间件和异常处理.
 - 自定义响应错误码code,可参考languages/zh_CN/apihelper.php
+
+### 自定义响应体结构
+若要自定义响应体结构,可以  
+- 首先修改config/autoload/apihelper.php中的base_controller配置,指定基本控制器,如  
+```php
+'base_controller' => Hyperf\Apihelper\Controller\BaseController::class,
+```
+
+- 然后基本控制器需要实现`Hyperf\Apihelper\Controller\ControllerInterface`接口.  
+包括以下几个静态方法:  
+    - `getResponseSchema(): array`,获取响应体结构
+    - `doSuccess($data = [], string $msg = 'success', array $result = []): array`,操作成功时响应
+    - `doFail($code = '400', array $trans = []): array`,操作失败时响应
+    - `doValidationFail(string $msg = ''): array`,执行验证失败时响应
+
+- 最后,基本控制器作为控制器的父类,所有的控制器必须继承自该类.  
+具体可参考`Hyperf\Apihelper\Controller\BaseController`.
+
 
 ### 自定义前置动作  
 可以自定义控制器前置方法,每次在具体动作之前执行.  
@@ -276,8 +291,8 @@ class Test extends BaseController {
 public function initialization(ServerRequestInterface $request): ServerRequestInterface
 ```
 该方法不会中止后续具体动作的执行.  
-方法名可以在config/autoload/apihelper.php中的controller_antecedent中指定,默认为initialization  
-具体可以参考src/BaseController.php
+方法名可以在config/autoload/apihelper.php中的`controller_antecedent`中指定,默认为initialization  
+具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
 
 ### 自定义拦截动作
@@ -288,28 +303,43 @@ public function initialization(ServerRequestInterface $request): ServerRequestIn
 public function interceptor(string $controller, string $action, string $route): mixed
 ```
 若该方法返回非空的数组或字符串,则停止执行后续的具体动作.  
-方法名可以在config/autoload/apihelper.php中的controller_intercept中指定,默认为interceptor  
-具体可以参考src/BaseController.php
+方法名可以在config/autoload/apihelper.php中的`controller_intercept`中指定,默认为interceptor  
+具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
 
 
 ### 校验参数提示
 - 配置开发环境提示具体参数错误  
-编辑apihelper.php配置,将show_params_detail_error设为true,  
+编辑apihelper.php配置,将`show_params_detail_error`设为true,  
 接口将显示具体字段验证规则的错误信息,方便前端调试.
 
 - 配置生产环境不提示具体参数错误  
-编辑apihelper.php配置,将show_params_detail_error设为false,  
+编辑apihelper.php配置,将`show_params_detail_error`设为false,  
 接口将隐藏具体字段验证信息,而仅提示"缺少必要的参数,或参数类型错误",减少外部安全攻击的可能.
+
+### 获取验证完的数据
+要获取具体参数,在控制器里面直接使用hyperf官方的方法去获取,如
+```php
+$this->request->header('user-agent');
+$this->request->query('len');
+$this->request->post();
+$this->request->route('id');
+$this->request->getUploadedFiles();
+```
+
+**注意:所有的参数都已经过校验处理,不再是原始的数据.**  
+若校验规则中包含有转换器,接收参数后,已经自动转换,无需再手工转换一次.如  
+- 校验规则中有trim,则' hello '会自动转为'hello'.
+- 校验规则中有int,则字符串'123'会自动转为整型123.
 
 
 ### swagger生成
 
-1.  api请求方法定义 `Get`, `Post`, `Put`, `Patch`, `Delete`
-2.  参数定义 `Header`, `Query`, `File`, `Form`, `Body`, `Path`
+1.  api请求方法定义包括 `Get`, `Post`, `Put`, `Patch`, `Delete`
+2.  参数定义包括 `Header`, `Query`, `File`, `Form`, `Body`, `Path`
 3.  返回结果定义 `ApiResponse` ,json串,如{"status":true,"msg":"success","code":200,"data":[]}
 4.  ApiVersion接口版本分组并不影响方法里面的实际绑定路由;它只是把控制器里面的接口,归入到某个swagger文件,以便查看.
-5.  生产环境请将配置output_json修改为false,关闭swagger.
+5.  生产环境请将配置`output_json`修改为false,关闭swagger.
 
 
 ### 图例
