@@ -341,6 +341,11 @@ $this->request->getUploadedFiles();
 4.  ApiVersion接口版本分组并不影响方法里面的实际绑定路由;它只是把控制器里面的接口,归入到某个swagger文件,以便查看.
 5.  生产环境请将配置`output_json`修改为false,关闭swagger.
 
+### v0.1.7升级时注意:  
+- config/autoload/apihelper.php的api配置新增`'base_controller' => \Hyperf\Apihelper\Controller\BaseController::class`项
+- 基本控制器Hyperf\Apihelper\BaseController已删除,将其替换为Hyperf\Apihelper\Controller\BaseController
+- ApiResponse::doSuccess方法已删除,替换为BaseController::doSuccess,或self::doSuccess
+- ApiResponse::doFail方法已删除,替换为BaseController::doFail,或self::doFail
 
 ### 图例
 ![api多版本](tests/01.jpg)  
