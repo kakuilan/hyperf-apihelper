@@ -30,6 +30,12 @@ interface ValidationInterface {
 
 
     /**
+     * 重置错误
+     */
+    public function resetError(): void;
+
+
+    /**
      * 获取错误
      * @return array
      */

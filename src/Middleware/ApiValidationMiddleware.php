@@ -223,6 +223,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
      * @return array
      */
     public function checkRules(array $rules, array $data, array $otherData, object $controller): array {
+        $this->validation->resetError();
         $validatedData = $this->validation->validate($rules, $data, $otherData, $controller);
         $errors        = $this->validation->getError();
         $error         = empty($errors) ? '' : current($errors);

@@ -196,6 +196,14 @@ class Validator implements ValidationInterface {
 
 
     /**
+     * 重置错误
+     */
+    public function resetError(): void {
+        $this->errors = [];
+    }
+
+
+    /**
      * 获取错误信息
      * @return array
      */
