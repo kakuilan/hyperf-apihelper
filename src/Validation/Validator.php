@@ -168,7 +168,7 @@ class Validator implements ValidationInterface {
                     $chkRes = call_user_func_array([$controller, $controllerMethod,], [$fieldValue, $field, $optionArr]);
 
                     //检查回调结果
-                    if (!is_array($chkRes) || count($chkRes) != 2 || !isset($chkRes[0]) || !isset($chkRes[1]) || !is_bool($chkRes[0])) {
+                    if (!is_array($chkRes) || count($chkRes) != 2 || !isset($chkRes[0]) || !is_bool($chkRes[0]) || !array_key_exists(1, $chkRes)) {
                         $msg = $this->translator->trans('apihelper.rule_callback_error_result', ['rule' => $controllerMethod]);
                         throw new ValidationException($msg);
                     }
