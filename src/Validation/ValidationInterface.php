@@ -24,21 +24,9 @@ interface ValidationInterface {
      * @param array $data 当前请求方式的数据
      * @param array $otherData 其他数据
      * @param object $controller 控制器对象
-     * @return array
+     * @return array 结果,形如[data, errors]
      */
     public function validate(array $rules, array $data, array $otherData = [], object $controller = null): array;
 
-
-    /**
-     * 重置错误
-     */
-    public function resetError(): void;
-
-
-    /**
-     * 获取错误
-     * @return array
-     */
-    public function getError(): array;
 
 }

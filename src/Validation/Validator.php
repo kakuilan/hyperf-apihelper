@@ -53,13 +53,6 @@ class Validator implements ValidationInterface {
 
 
     /**
-     * 错误消息
-     * @var array
-     */
-    public $errors = [];
-
-
-    /**
      * 合并数据,将新数据更新到源数据中.
      * @param array $origin 源数据
      * @param array $new 新数据
@@ -116,13 +109,14 @@ class Validator implements ValidationInterface {
      * @param array $data
      * @param array $otherData
      * @param object|null $controller
-     * @return array
+     * @return array 结果,形如[data, errors]
      * @throws ValidationException
      */
     public function validate(array $rules, array $data, array $otherData = [], object $controller = null): array {
         $hyperfRules = $rules['hyperfs'] ?? []; //hyperf本身的验证器规则
         $customRules = $rules['customs'] ?? []; //本组件的扩展验证规则
         $allData     = array_merge($otherData, $data);
+        $errors      = [];
 
         //先执行hyperf的验证
         $validator = $this->validator->make($allData, $hyperfRules);
@@ -154,8 +148,9 @@ class Validator implements ValidationInterface {
 
                 $ruleMethod = 'rule_' . $ruleName;
                 if (method_exists($this, $ruleMethod)) {
-                    $check = call_user_func_array([$this, $ruleMethod,], [$fieldValue, $field, $optionArr]);
+                    [$check, $err] = call_user_func_array([$this, $ruleMethod,], [$fieldValue, $field, $optionArr]);
                     if (!$check) {
+                        array_push($errors, $err);
                         break;
                     }
                 }
@@ -175,7 +170,7 @@ class Validator implements ValidationInterface {
 
                     [$chk, $val] = $chkRes;
                     if ($chk !== true) {
-                        $this->errors[] = strval($val);
+                        array_push($errors, strval($val));
                         break;
                     } elseif (!is_null($val)) {
                         $fieldValue = $val;
@@ -186,29 +181,9 @@ class Validator implements ValidationInterface {
             ArrayHelper::setDotKey($data, $field, $fieldValue);
         }
 
-        $this->errors = array_merge($this->errors, $validator->errors()->getMessages());
-        if ($this->errors) {
-            return [];
-        }
+        $errors = array_merge($errors, $validator->errors()->getMessages());
 
-        return $data;
-    }
-
-
-    /**
-     * 重置错误
-     */
-    public function resetError(): void {
-        $this->errors = [];
-    }
-
-
-    /**
-     * 获取错误信息
-     * @return array
-     */
-    public function getError(): array {
-        return $this->errors;
+        return [$data, $errors];
     }
 
 
@@ -299,19 +274,20 @@ class Validator implements ValidationInterface {
      * @param $val
      * @param string $field
      * @param array $options
-     * @return bool
+     * @return array [bool, err]
      */
-    public function rule_enum($val, string $field, array $options = []): bool {
+    public function rule_enum($val, string $field, array $options = []): array {
+        $err = '';
         if (empty($options)) {
-            return true;
+            return [true, $err];
         }
 
         $chk = $val !== '' && in_array($val, $options);
         if (!$chk) {
-            $this->errors[] = $this->translator->trans('apihelper.rule_enum', ['field' => $field, 'values' => implode(',', $options)]);
+            $err = $this->translator->trans('apihelper.rule_enum', ['field' => $field, 'values' => implode(',', $options)]);
         }
 
-        return boolval($chk);
+        return [boolval($chk), $err];
     }
 
 
@@ -320,25 +296,27 @@ class Validator implements ValidationInterface {
      * @param $val
      * @param string $field
      * @param array $options
-     * @return bool
+     * @return array [bool, err]
      */
-    public function rule_object($val, string $field, array $options = []): bool {
+    public function rule_object($val, string $field, array $options = []): array {
+        $err = '';
+
         // 必须是数组
         if (!is_array($val)) {
-            $this->errors[] = $this->translator->trans('apihelper.rule_object', ['field' => $field]);
-            return false;
+            $err = $this->translator->trans('apihelper.rule_object', ['field' => $field]);
+            return [false, $err];
         }
 
         // 键值不能是数字
         $keys = array_keys($val);
         foreach ($keys as $key) {
             if (is_integer($key)) {
-                $this->errors[] = $this->translator->trans('apihelper.rule_object', ['field' => $field]);
-                return false;
+                $err = $this->translator->trans('apihelper.rule_object', ['field' => $field]);
+                return [false, $err];
             }
         }
 
-        return true;
+        return [true, $err];
     }
 
 
@@ -347,15 +325,16 @@ class Validator implements ValidationInterface {
      * @param $val
      * @param string $field
      * @param array $options
-     * @return bool
+     * @return array [bool, err]
      */
-    public function rule_natural($val, string $field, array $options = []): bool {
+    public function rule_natural($val, string $field, array $options = []): array {
+        $err = '';
         $chk = ValidateHelper::isNaturalNum($val);
         if (!$chk) {
-            $this->errors[] = $this->translator->trans('apihelper.rule_natural', ['field' => $field]);
+            $err = $this->translator->trans('apihelper.rule_natural', ['field' => $field]);
         }
 
-        return boolval($chk);
+        return [boolval($chk), $err];
     }
 
 
@@ -364,15 +343,16 @@ class Validator implements ValidationInterface {
      * @param $val
      * @param string $field
      * @param array $options
-     * @return bool
+     * @return array [bool, err]
      */
-    public function rule_cnmobile($val, string $field, array $options = []): bool {
+    public function rule_cnmobile($val, string $field, array $options = []): array {
+        $err = '';
         $chk = ValidateHelper::isMobilecn($val);
         if (!$chk) {
-            $this->errors[] = $this->translator->trans('apihelper.rule_cnmobile', ['field' => $field]);
+            $err = $this->translator->trans('apihelper.rule_cnmobile', ['field' => $field]);
         }
 
-        return boolval($chk);
+        return [boolval($chk), $err];
     }
 
 
@@ -381,15 +361,16 @@ class Validator implements ValidationInterface {
      * @param $val
      * @param string $field
      * @param array $options
-     * @return bool
+     * @return array [bool, err]
      */
-    public function rule_cncreditno($val, string $field, array $options = []): bool {
+    public function rule_cncreditno($val, string $field, array $options = []): array {
+        $err = '';
         $chk = ValidateHelper::isChinaCreditNo($val);
         if (!$chk) {
-            $this->errors[] = $this->translator->trans('apihelper.rule_cncreditno', ['field' => $field]);
+            $err = $this->translator->trans('apihelper.rule_cncreditno', ['field' => $field]);
         }
 
-        return boolval($chk);
+        return [boolval($chk), $err];
     }
 
 
@@ -398,16 +379,17 @@ class Validator implements ValidationInterface {
      * @param $val
      * @param string $field
      * @param array $options
-     * @return bool
+     * @return array [bool, err]
      */
-    public function rule_safe_password($val, string $field, array $options = []): bool {
+    public function rule_safe_password($val, string $field, array $options = []): array {
+        $err   = '';
         $level = StringHelper::passwdSafeGrade($val);
         if ($level < 2) {
-            $this->errors[] = $this->translator->trans('apihelper.rule_safe_password_simple', ['field' => $field]);
-            return false;
+            $err = $this->translator->trans('apihelper.rule_safe_password_simple', ['field' => $field]);
+            return [false, $err];
         }
 
-        return true;
+        return [true, $err];
     }
 
 
