@@ -79,7 +79,7 @@ class Validator implements ValidationInterface {
      * @return array
      */
     public static function sortDetailRules(array $rules): array {
-        $priorities = ['default', 'int', 'integer', 'bool', 'boolean', 'number', 'numeric', 'float', 'string', 'array', 'object'];
+        $priorities = ['default', 'required', 'int', 'integer', 'bool', 'boolean', 'number', 'numeric', 'float', 'string', 'array', 'object'];
         $res        = [];
 
         foreach ($rules as $rule) {
@@ -124,56 +124,58 @@ class Validator implements ValidationInterface {
         $data      = self::combineData($data, $newData);
 
         //再执行自定义验证
-        foreach ($customRules as $field => $customRule) {
-            if (empty($customRule)) {
+        foreach ($customRules as $field => $customRuleArr) {
+            if (empty($customRuleArr)) {
                 continue;
             }
 
-            //$field字段可能存在多级,如row.name
-            $fieldValue  = ArrayHelper::getDotKey($allData, $field, null);
-            $detailRules = explode('|', $customRule);
-            foreach ($detailRules as $detailRule) {
-                $ruleName = ApiAnnotation::parseRuleName($detailRule);
+            foreach ($customRuleArr as $customRule) {
+                //$field字段可能存在多级,如row.name
+                $fieldValue  = ArrayHelper::getDotKey($allData, $field, null);
+                $detailRules = explode('|', $customRule);
+                foreach ($detailRules as $detailRule) {
+                    $ruleName = ApiAnnotation::parseRuleName($detailRule);
 
-                $optionStr = explode(':', $detailRule)[1] ?? '';
-                $optionArr = explode(',', $optionStr);
-                if ($optionStr == '' && empty($optionArr)) {
-                    array_push($optionArr, '');
-                }
-
-                $convMethod = 'conver_' . $ruleName;
-                if (method_exists($this, $convMethod)) {
-                    $fieldValue = call_user_func_array([$this, $convMethod,], [$fieldValue, $optionArr]);
-                }
-
-                $ruleMethod = 'rule_' . $ruleName;
-                if (method_exists($this, $ruleMethod)) {
-                    [$check, $err] = call_user_func_array([$this, $ruleMethod,], [$fieldValue, $field, $optionArr]);
-                    if (!$check) {
-                        array_push($errors, $err);
-                        break;
-                    }
-                }
-
-                // cb_xxx,调用控制器的方法xxx
-                // xxx方法,接受3个参数:$fieldValue, $field, $optionArr;
-                // 返回结果是一个数组:若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.
-                $controllerMethod = str_replace(Validator::$validateCallbackPrefix, '', $ruleName);
-                if (strpos($ruleName, Validator::$validateCallbackPrefix) !== false && method_exists($controller, $controllerMethod)) {
-                    $chkRes = call_user_func_array([$controller, $controllerMethod,], [$fieldValue, $field, $optionArr]);
-
-                    //检查回调结果
-                    if (!is_array($chkRes) || count($chkRes) != 2 || !isset($chkRes[0]) || !is_bool($chkRes[0]) || !array_key_exists(1, $chkRes)) {
-                        $msg = $this->translator->trans('apihelper.rule_callback_error_result', ['rule' => $controllerMethod]);
-                        throw new ValidationException($msg);
+                    $optionStr = explode(':', $detailRule)[1] ?? '';
+                    $optionArr = explode(',', $optionStr);
+                    if ($optionStr == '' && empty($optionArr)) {
+                        array_push($optionArr, '');
                     }
 
-                    [$chk, $val] = $chkRes;
-                    if ($chk !== true) {
-                        array_push($errors, strval($val));
-                        break;
-                    } elseif (!is_null($val)) {
-                        $fieldValue = $val;
+                    $convMethod = 'conver_' . $ruleName;
+                    if (method_exists($this, $convMethod)) {
+                        $fieldValue = call_user_func_array([$this, $convMethod,], [$fieldValue, $optionArr]);
+                    }
+
+                    $ruleMethod = 'rule_' . $ruleName;
+                    if (method_exists($this, $ruleMethod)) {
+                        [$check, $err] = call_user_func_array([$this, $ruleMethod,], [$fieldValue, $field, $optionArr]);
+                        if (!$check) {
+                            array_push($errors, $err);
+                            break;
+                        }
+                    }
+
+                    // cb_xxx,调用控制器的方法xxx
+                    // xxx方法,接受3个参数:$fieldValue, $field, $optionArr;
+                    // 返回结果是一个数组:若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.
+                    $controllerMethod = str_replace(Validator::$validateCallbackPrefix, '', $ruleName);
+                    if (strpos($ruleName, Validator::$validateCallbackPrefix) !== false && method_exists($controller, $controllerMethod)) {
+                        $chkRes = call_user_func_array([$controller, $controllerMethod,], [$fieldValue, $field, $optionArr]);
+
+                        //检查回调结果
+                        if (!is_array($chkRes) || count($chkRes) != 2 || !isset($chkRes[0]) || !is_bool($chkRes[0]) || !array_key_exists(1, $chkRes)) {
+                            $msg = $this->translator->trans('apihelper.rule_callback_error_result', ['rule' => $controllerMethod]);
+                            throw new ValidationException($msg);
+                        }
+
+                        [$chk, $val] = $chkRes;
+                        if ($chk !== true) {
+                            array_push($errors, strval($val));
+                            break;
+                        } elseif (!is_null($val)) {
+                            $fieldValue = $val;
+                        }
                     }
                 }
             }

@@ -37,6 +37,7 @@ use Hyperf\Server\Exception\RuntimeException;
 use Hyperf\Utils\ApplicationContext;
 use Hyperf\Validation\Concerns\ValidatesAttributes;
 use Kph\Consts;
+use Kph\Helpers\ArrayHelper;
 use Kph\Helpers\StringHelper;
 use Kph\Objects\BaseObject;
 use Psr\Container\ContainerInterface;
@@ -233,13 +234,13 @@ class DispatcherFactory extends BaseDispatcherFactory {
                         //是否本组件的转换器
                         $convMethod = 'conver_' . $ruleName;
                         if (method_exists(Validator::class, $convMethod)) {
-                            $customs[$fieldName] = $detail;
+                            $customs[$fieldName][] = $detail;
                         }
 
                         //是否本组件的验证规则
                         $ruleMethod = 'rule_' . $ruleName;
                         if (method_exists(Validator::class, $ruleMethod)) {
-                            $customs[$fieldName] = $detail;
+                            $customs[$fieldName][] = $detail;
                         }
 
                         // cb_xxx,调用控制器的方法xxx
@@ -248,15 +249,15 @@ class DispatcherFactory extends BaseDispatcherFactory {
                             //检查该方法
                             $this->checkValidateCallbackAction($className, $controllerMethod);
 
-                            $customs[$fieldName] = $detail;
+                            $customs[$fieldName][] = $detail;
                             continue;
                         }
 
                         // 是否hyperf验证规则
                         $hyperfMethod = 'validate' . StringHelper::toCamelCase($ruleName);
                         if (method_exists(ValidatesAttributes::class, $hyperfMethod)) {
-                            $hyperfs[$fieldName] = $detail;
-                        } elseif (!in_array($detail, $customs)) { //非hyperf规则,且非本组件规则
+                            $hyperfs[$fieldName][] = $detail;
+                        } elseif (!in_array($detail, ArrayHelper::multiArrayValues($customs))) { //非hyperf规则,且非本组件规则
                             throw new RuntimeException("The rule not defined: {$detail}");
                         }
                     }
