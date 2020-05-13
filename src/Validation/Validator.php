@@ -241,9 +241,14 @@ class Validator implements ValidationInterface {
      * @return bool
      */
     public static function conver_boolean($val): bool {
-        if (empty($val) || in_array(strtolower($val), ['false', 'null', 'nil', 'none', '0',])) {
+        if (is_null($val) || $val === '') {
             return false;
-        } elseif (in_array(strtolower($val), ['true', '1',])) {
+        }
+
+        $val = strtolower(strval($val));
+        if (in_array($val, ['false', 'null', 'nil', 'none', '0', '0.0',])) {
+            return false;
+        } elseif (in_array($val, ['true', '1',])) {
             return true;
         }
 
