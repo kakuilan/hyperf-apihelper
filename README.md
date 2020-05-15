@@ -238,7 +238,7 @@ class Test extends BaseController {
     - default,将参数值设为指定的默认值
     - int/integer,将参数值转换为整型.注意:若未传该参数,则默认为intval(null)=0
     - float,将参数值转换为浮点数.注意:若未传该参数,则默认为floatval(null)=0
-    - bool,将参数值转换为布尔型.注意:若未传该参数,则默认为boolval(null)=false ,期中字符串:  
+    - bool,将参数值转换为布尔型.注意:若未传该参数,则默认为boolval(null)=false ,其中字符串:  
         - 'false', 'null', 'nil', 'none', '0', '0.0' 将转换为`false`
         - 'true', '1' 将转换为`true`
     - trim,过滤参数值前后空格
