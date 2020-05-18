@@ -1,10 +1,11 @@
 swagger
-https://xiaoxiami.gitbook.io/swagger/
+https://petstore.swagger.io/
 https://swagger.io/docs/specification/2-0/describing-parameters/
 https://swagger.io/docs/specification/data-models/data-types/
+http://petstore.swagger.io/v2/swagger.json
+https://xiaoxiami.gitbook.io/swagger/
 https://github.com/swagger-api/swagger-core/wiki/Swagger-2.X---Getting-started
 https://github.com/zircote/swagger-php/blob/master/docs/Getting-started.md
-http://petstore.swagger.io/v2/swagger.json
 https://docs.ipswitch.com/nm/whatsupgold2019_1/02_Guides/rest_api/
 https://www.jianshu.com/p/b0b19368e4a8
 https://www.huangdayu.cn/2018/12/16/Swagger%E6%B3%A8%E8%A7%A3%E6%A6%82%E8%A7%88/
