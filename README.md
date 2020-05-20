@@ -56,7 +56,7 @@ return [
 ```
 
 
-### 2.使用
+### 2.使用示例
 编辑控制器文件app/Controller/Test.php,如
 ```php
 namespace App\Controller;
