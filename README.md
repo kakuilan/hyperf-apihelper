@@ -247,6 +247,7 @@ class Test extends BaseController {
      * @return array
      */
     public static function getSchemaSayHello(): array {
+        //接口响应模型的外层结构,必须和Response基本响应体一致
         $res         = self::getSchemaResponse();
         $res['data'] = '$Hello';
 
