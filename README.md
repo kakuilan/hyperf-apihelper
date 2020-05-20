@@ -229,7 +229,7 @@ class Test extends BaseController {
 
 
     /**
-     * 获取模型结构-结构名 Hello
+     * 获取模型结构-结构名 Hello,为一般数据模型
      * @return array
      */
     public static function getSchemaHello(): array {
@@ -243,7 +243,7 @@ class Test extends BaseController {
 
 
     /**
-     * 获取模型结构-结构名 SayHello
+     * 获取模型结构-结构名 SayHello,为接口响应模型
      * @return array
      */
     public static function getSchemaSayHello(): array {
