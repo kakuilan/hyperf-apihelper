@@ -227,6 +227,7 @@ class Test extends BaseController {
         return self::doSuccess($files);
     }
 
+
     /**
      * 获取模型结构-结构名 Hello
      * @return array
@@ -239,6 +240,30 @@ class Test extends BaseController {
             'p' => '$Person',
         ];
     }
+
+
+    /**
+     * 获取模型结构-结构名 SayHello
+     * @return array
+     */
+    public static function getSchemaSayHello(): array {
+        $res         = self::getSchemaResponse();
+        $res['data'] = '$Hello';
+
+        return $res;
+    }
+
+
+    /**
+     * @Get(path="/test/sayhello", description="自定义响应模型-SayHello")
+     * @ApiResponse(code=200, schema={"$ref":"SayHello"})
+     */
+    public function sayhello() {
+        //这里仅做测试例子,实际数据应根据你自己的应用去处理
+        $data = self::getDefaultDataBySchemaName('SayHello');
+        return self::doSuccess($data);
+    }
+
 
     /**
      * @Get(path="/test/persons", description="自定义响应模型-人员列表")
@@ -423,7 +448,7 @@ public function interceptor(string $controller, string $action, string $route): 
     - ApiResponse::doSuccess方法已删除,替换为BaseController::doSuccess,或self::doSuccess
     - ApiResponse::doFail方法已删除,替换为BaseController::doFail,或self::doFail
 
-- #### v0.2.3升级:  
+- #### v0.2.4升级:  
     - `ControllerInterface::getResponseSchema`已改为`ControllerInterface::getSchemaResponse`
     - `BaseController::getResponseSchema`已改为`BaseController::getSchemaResponse`
     - 将你代码中引用到的`getResponseSchema`修改为`getSchemaResponse`
