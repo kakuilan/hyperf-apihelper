@@ -73,7 +73,8 @@ class Swagger {
      * 初始化常用模型定义
      */
     public function initDefinitions() {
-        $this->confSwagger['definitions'] = [];
+        $this->confSwagger['definitions']   = [];
+        $this->confSwagger['schemaMethods'] = [];
 
         //基本响应体
         /** @var \Hyperf\Apihelper\Controller\ControllerInterface $baseCtrlClass */
@@ -104,12 +105,11 @@ class Swagger {
         ];
 
         $this->confSwagger['definitions']['Response'] = $response;
-        $this->confSwagger['schemaMethods']           = [];
 
         //基本控制器中定义的其他结构模型
         $methods = self::getSchemaMethods($baseCtrlClass);
         foreach ($methods as $method) {
-            array_push($this->confSwagger['schemaMethods'], $method);
+            $this->confSwagger['schemaMethods'][$method] = $baseCtrlClass;
             if ($method === 'getSchemaResponse') { //忽略外层基本结构模型
                 continue;
             }
@@ -306,12 +306,12 @@ class Swagger {
         //先处理该控制器类中定义的结构模型
         $methods = self::getSchemaMethods($className);
         foreach ($methods as $method) {
-            if (in_array($method, $this->confSwagger['schemaMethods'])) {
+            if (in_array($method, array_keys($this->confSwagger['schemaMethods']))) {
                 continue;
             }
 
             $this->parseSchemaModelByName($className, $method, $methods);
-            array_push($this->confSwagger['schemaMethods'], $method);
+            $this->confSwagger['schemaMethods'][$method] = $className;
         }
 
         /** @var \Hyperf\Apihelper\Annotation\Methods $reqMethod */
@@ -487,7 +487,8 @@ class Swagger {
                 if (is_array($item->schema) && array_key_exists('$ref', $item->schema) && array_key_exists($item->schema['$ref'], $this->confSwagger['definitions'])) {
                     //检查结构是否和基本响应体结构相同
                     [$schemaName, $schemaMethod] = self::extractSchemaNameMethod($item->schema['$ref']);
-                    $schemaData = call_user_func([$baseCtrlClass, $schemaMethod]);
+                    $controllerClass = $this->confSwagger['schemaMethods'][$schemaMethod] ?? '';
+                    $schemaData      = call_user_func([$controllerClass, $schemaMethod]);
                     if (!ArrayHelper::compareSchema($baseSchema, $schemaData)) {
                         throw new RuntimeException("[{$schemaMethod}] must have the same structure as the return value of [getSchemaResponse]");
                     }
