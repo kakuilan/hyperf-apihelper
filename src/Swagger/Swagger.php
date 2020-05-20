@@ -24,9 +24,12 @@ use Hyperf\Utils\ApplicationContext;
 use Kph\Helpers\ArrayHelper;
 use Kph\Helpers\DirectoryHelper;
 use Kph\Helpers\FileHelper;
+use Kph\Helpers\StringHelper;
 use Kph\Helpers\UrlHelper;
 use Kph\Helpers\ValidateHelper;
-
+use Kph\Objects\BaseObject;
+use ReflectionMethod;
+use ReflectionException;
 
 /**
  * Class Swagger
@@ -70,15 +73,18 @@ class Swagger {
      * 初始化常用模型定义
      */
     public function initDefinitions() {
+        $this->confSwagger['definitions'] = [];
+
         //基本响应体
+        /** @var \Hyperf\Apihelper\Controller\ControllerInterface $baseCtrlClass */
         $baseCtrlClass = $this->confGlobal->get('apihelper.api.base_controller');
         if (empty($baseCtrlClass)) {
             throw new RuntimeException("apihelper.api.base_controller can not be empty.");
-        } elseif(!method_exists($baseCtrlClass, 'getResponseSchema')) {
+        } elseif (!method_exists($baseCtrlClass, 'getSchemaResponse')) {
             throw new RuntimeException("{$baseCtrlClass} must implements " . ControllerInterface::class);
         }
 
-        $baseSchema = $baseCtrlClass::getResponseSchema();
+        $baseSchema = call_user_func([$baseCtrlClass, 'getSchemaResponse']);
         $properties = [];
         foreach ($baseSchema as $key => $val) {
             $item = [
@@ -94,11 +100,170 @@ class Swagger {
 
         $response = [
             'type'       => 'object',
-            'required'   => [],
             'properties' => $properties,
         ];
 
         $this->confSwagger['definitions']['Response'] = $response;
+        $this->confSwagger['schemaMethods']           = [];
+
+        //基本控制器中定义的其他结构模型
+        $methods = self::getSchemaMethods($baseCtrlClass);
+        foreach ($methods as $method) {
+            array_push($this->confSwagger['schemaMethods'], $method);
+            if ($method === 'getSchemaResponse') { //忽略外层基本结构模型
+                continue;
+            }
+
+            $this->parseSchemaModelByName($baseCtrlClass, $method, $methods);
+        }
+    }
+
+
+    /**
+     * 根据名称解析响应结构模型
+     * @param string $controller 控制器类
+     * @param string $schemaStr 结构(或方法)名称
+     * @param array $methods 控制器中定义的结构方法数组
+     * @return mixed|array|object
+     * @throws ReflectionException
+     */
+    public function parseSchemaModelByName(string $controller, string $schemaStr, array $methods = []) {
+        if (empty($methods)) {
+            $methods = self::getSchemaMethods($baseCtrlClass);
+        }
+
+        [$schemaName, $schemaMethod] = self::extractSchemaNameMethod($schemaStr);
+        $callback   = "{$controller}::{$schemaMethod}";
+        $schemaData = call_user_func($callback);
+        if (!is_array($schemaData)) { //结构模型方法的返回值必须是数组
+            throw new RuntimeException("{$callback} the return value type must be an array.");
+        }
+
+        $properties = self::parseSchemaNestedData($schemaData, $methods);
+
+        //添加到swagger模型定义列表
+        $type        = ApiAnnotation::getTypeByValue($schemaData);
+        $schemaModel = [
+            'type' => $type,
+        ];
+        if ($type == 'array') {
+            $schemaModel['items'] = current($properties);
+        } elseif ($type == 'object') {
+            $schemaModel['properties'] = $properties;
+        }
+
+        $this->confSwagger['definitions'][$schemaName] = $schemaModel;
+
+        return $schemaData;
+    }
+
+
+    /**
+     * 解析模型嵌套数据
+     * @param array $arr
+     * @param array $methods
+     * @return array
+     */
+    public static function parseSchemaNestedData(array $arr, array $methods): array {
+        ArrayHelper::regularSort($arr);
+        foreach ($arr as &$val) {
+            $newVal = null;
+            if (is_array($val) && !empty($val)) {
+                $ret      = self::parseSchemaNestedData($val, $methods);
+                $subitems = implode('', ArrayHelper::multiArrayValues($ret));
+
+                //一维数组,且元素是引用结构
+                if (ValidateHelper::isOneDimensionalArray($val) && stripos($subitems, 'definitions')) {
+                    $newVal = [
+                        'type'  => 'array',
+                        'items' => current($ret),
+                    ];
+                }
+                $val = $ret;
+            } elseif (is_string($val) && ValidateHelper::startsWith($val, '$')) {
+                $str = StringHelper::removeBefore($val, '$', true);
+                if (ValidateHelper::isAlphaNumDash($str)) {
+                    [$schemaName, $schemaMethod] = self::extractSchemaNameMethod($str);
+                    if (in_array($schemaMethod, $methods)) {
+                        $newVal = [
+                            '$ref' => "#/definitions/{$schemaName}",
+                        ];
+                    }
+                }
+            }
+
+            if (empty($newVal)) {
+                $example = null;
+                if (empty($val) && is_array($val)) {
+                    $example = [];
+                } elseif (is_object($val) && ValidateHelper::isEmptyObject($val)) {
+                    $example = new \stdClass();
+                } elseif (is_string($val) || is_int($val) || is_float($val) || is_bool($val)) {
+                    $example = $val;
+                }
+
+                $type   = ApiAnnotation::getTypeByValue($val);
+                $newVal = [
+                    'type' => $type,
+                ];
+                if ($type == 'integer') {
+                    $newVal['format'] = 'int64';
+                } elseif ($type == 'object') {
+                    $newVal['properties'] = $val;
+                } elseif ($type == 'array') {
+                    $newVal['items'] = new \stdClass(); //数组元素是任意类型
+                    $example         = $val;
+                }
+
+                if (!is_null($example)) {
+                    $newVal['example'] = $example;
+                }
+            }
+
+            $val = $newVal;
+        }
+
+        return $arr;
+    }
+
+
+    /**
+     * 抽取结构名和方法名
+     * @param string $str
+     * @return array
+     */
+    public static function extractSchemaNameMethod(string $str): array {
+        $schemaMethod = $schemaName = '';
+        if (!empty($str)) {
+            if (ValidateHelper::startsWith($str, ApiAnnotation::$schemaMethodPrefix)) {
+                $schemaMethod = $str;
+                $schemaName   = str_replace(ApiAnnotation::$schemaMethodPrefix, '', $str);
+            } else {
+                // 处理带引用的结构名,如 $Person
+                $str          = StringHelper::removeBefore($str, '$', true);
+                $schemaName   = ucfirst(StringHelper::toCamelCase($str));
+                $schemaMethod = ApiAnnotation::$schemaMethodPrefix . $schemaName;
+            }
+        }
+
+        return [$schemaName, $schemaMethod];
+    }
+
+
+    /**
+     * 获取控制器中结构模型方法列表
+     * @param string $controller 控制器类
+     * @return array
+     * @throws ReflectionException
+     */
+    public static function getSchemaMethods(string $controller): array {
+        $methods = BaseObject::getClassMethods($controller, ReflectionMethod::IS_STATIC | ReflectionMethod::IS_PUBLIC);
+        $methods = array_filter($methods, function ($v) {
+            // 以'getSchema'为前缀的公共静态方法
+            return ValidateHelper::startsWith($v, ApiAnnotation::$schemaMethodPrefix);
+        });
+
+        return $methods;
     }
 
 
@@ -136,6 +301,17 @@ class Swagger {
             if (!preg_match("/^(?!_)[a-zA-Z0-9_]+$/u", $versionAnnotation->group)) {
                 throw new RuntimeException('Version group name can only be in english, numerals, and underscores');
             }
+        }
+
+        //先处理该控制器类中定义的结构模型
+        $methods = self::getSchemaMethods($className);
+        foreach ($methods as $method) {
+            if (in_array($method, $this->confSwagger['schemaMethods'])) {
+                continue;
+            }
+
+            $this->parseSchemaModelByName($className, $method, $methods);
+            array_push($this->confSwagger['schemaMethods'], $method);
         }
 
         /** @var \Hyperf\Apihelper\Annotation\Methods $reqMethod */
@@ -298,12 +474,24 @@ class Swagger {
         $path = self::turnPath($path);
         $resp = [];
 
+        //基本响应体
+        /** @var \Hyperf\Apihelper\Controller\ControllerInterface $baseCtrlClass */
+        $baseCtrlClass = $this->confGlobal->get('apihelper.api.base_controller');
+        $baseSchema    = call_user_func([$baseCtrlClass, 'getSchemaResponse']);
+
         /** @var ApiResponse $item */
         foreach ($responses as $item) {
             $resp[$item->code] = ['description' => $item->description,];
             if ($item->schema) {
                 //引用已定义的模型
                 if (is_array($item->schema) && array_key_exists('$ref', $item->schema) && array_key_exists($item->schema['$ref'], $this->confSwagger['definitions'])) {
+                    //检查结构是否和基本响应体结构相同
+                    [$schemaName, $schemaMethod] = self::extractSchemaNameMethod($item->schema['$ref']);
+                    $schemaData = call_user_func([$baseCtrlClass, $schemaMethod]);
+                    if (!ArrayHelper::compareSchema($baseSchema, $schemaData)) {
+                        throw new RuntimeException("[{$schemaMethod}] must have the same structure as the return value of [getSchemaResponse]");
+                    }
+
                     $resp[$item->code]['schema']['$ref'] = '#/definitions/' . $item->schema['$ref'];
                 } else {
                     $modelName = implode('', array_map('ucfirst', explode('/', $path))) . ucfirst($method) . 'Response' . $item->code;
@@ -385,7 +573,7 @@ class Swagger {
             return;
         }
 
-        unset($this->confSwagger['output_json'], $this->confSwagger['output_dir'], $this->confSwagger['output_basename']);
+        unset($this->confSwagger['output_json'], $this->confSwagger['output_dir'], $this->confSwagger['output_basename'], $this->confSwagger['schemaMethods']);
 
         //是否开启swagger文档功能
         if ($openSwagger) {

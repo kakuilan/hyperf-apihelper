@@ -30,6 +30,13 @@ class ApiAnnotation {
 
 
     /**
+     * 响应结构模型方法名前缀
+     * @var string
+     */
+    public static $schemaMethodPrefix = 'getSchema';
+
+
+    /**
      * 路由规则缓存,形如
      * //    $arr = [
      * //        'class::method' => [
@@ -208,7 +215,7 @@ class ApiAnnotation {
         } elseif (is_bool($value)) {
             return 'boolean';
         } elseif (is_array($value)) {
-            return 'array';
+            return ValidateHelper::isAssocArray($value) ? 'object' : 'array';
         } elseif (is_object($value)) {
             return 'object';
         }

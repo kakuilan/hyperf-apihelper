@@ -15,10 +15,10 @@ interface ControllerInterface {
 
 
     /**
-     * 获取响应体结构(键值对数组)
+     * 获取结构-基本响应体(键值对数组)
      * @return array
      */
-    public static function getResponseSchema(): array;
+    public static function getSchemaResponse(): array;
 
 
     /**

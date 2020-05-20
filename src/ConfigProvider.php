@@ -62,12 +62,6 @@ class ConfigProvider {
                     'destination' => BASE_PATH . '/public/swagger/favicon-32x32.png', //目标路径
                 ],
                 [
-                    'id'          => 'fonts css',
-                    'description' => '',
-                    'source'      => __DIR__ . '/../publish/swagger/fonts.css', //源文件
-                    'destination' => BASE_PATH . '/public/swagger/fonts.css', //目标路径
-                ],
-                [
                     'id'          => 'html',
                     'description' => '',
                     'source'      => __DIR__ . '/../publish/swagger/index.html', //源文件

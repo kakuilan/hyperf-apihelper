@@ -1,8 +1,9 @@
 swagger
 https://petstore.swagger.io/
+http://petstore.swagger.io/v2/swagger.json
 https://swagger.io/docs/specification/2-0/describing-parameters/
 https://swagger.io/docs/specification/data-models/data-types/
-http://petstore.swagger.io/v2/swagger.json
+https://swagger.io/tools/swagger-ui/
 https://xiaoxiami.gitbook.io/swagger/
 https://github.com/swagger-api/swagger-core/wiki/Swagger-2.X---Getting-started
 https://github.com/zircote/swagger-php/blob/master/docs/Getting-started.md
@@ -15,4 +16,3 @@ https://github.com/lfq618/blog/blob/master/php/Swagger%E7%94%9F%E6%88%90php%20re
 
 ### TODO
 - swagger更多属性的支持
-- 响应体模型多层次文档支持

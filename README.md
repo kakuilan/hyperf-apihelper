@@ -7,11 +7,12 @@ hyperf api and swagger helper.
 - swagger支持接口多版本分组管理.
 - 支持restful path路由参数校验.
 - 支持自定义响应体结构.
+- 支持自定义多层级swagger model.
 - 支持自定义前置动作.
 - 支持自定义拦截动作.
 
 
-### 安装
+### 0.安装
 - nginx(或apache)指定站点目录为 BASE_PATH/public, swagger-ui将自动发布到该目录下
 - 安装组件
 ```sh
@@ -24,7 +25,7 @@ php bin/hyperf.php vendor:publish kakuilan/hyperf-apihelper
 
 
 
-### 配置
+### 1.配置
 - 修改config/autoload/apihelper.php中的配置,将`host`改为你的域名,如test.com,则接口文档地址为test.com/swagger
 - 修改config/autoload/middlewares.php中间件配置,如
 ```php
@@ -55,7 +56,7 @@ return [
 ```
 
 
-### 使用
+### 2.使用
 编辑控制器文件app/Controller/Test.php,如
 ```php
 namespace App\Controller;
@@ -226,12 +227,43 @@ class Test extends BaseController {
         return self::doSuccess($files);
     }
 
+    /**
+     * 获取模型结构-结构名 Hello
+     * @return array
+     */
+    public static function getSchemaHello(): array {
+        return [
+            'a' => false,
+            'b' => 2,
+            'c' => 'hello',
+            'p' => '$Person',
+        ];
+    }
+
+    /**
+     * @Get(path="/test/persons", description="自定义响应模型-人员列表")
+     * @ApiResponse(code=200, schema={"$ref":"TestPersons"})
+     */
+    public function persons() {
+        $data = self::getDefaultDataBySchemaName('Persons');
+        return self::doSuccess($data);
+    }
+
+
+    /**
+     * @Get(path="/test/company", description="自定义响应模型-单个公司")
+     * @ApiResponse(code=200, schema={"$ref":"TestCompany"})
+     */
+    public function company() {
+        $data = self::getDefaultDataBySchemaName('Company');
+        return self::doSuccess($data);
+    }
 
 }
 ```
 
 
-### 验证规则
+### 3.验证规则
 - 组件会先执行Hyperf官方规则,详见[hyperf validation](https://hyperf.wiki/#/zh-cn/validation)
 - 再执行本组件的验证规则,包括:  
   - 转换器,有
@@ -262,30 +294,61 @@ class Test extends BaseController {
     ```
 
 
-### 默认响应体结构
-- 接口操作成功,返回{"status":true,"msg":"success","code":200,"data":[]}
-- 接口操作失败,返回{"status":false,"msg":"fail","code":400,"data":[]}
-- 自定义响应错误码code,可参考languages/zh_CN/apihelper.php
+### 4.接口响应体
+- #### 4.1默认响应体结构
+    - 接口操作成功,返回{"status":true,"msg":"success","code":200,"data":[]}
+    - 接口操作失败,返回{"status":false,"msg":"fail","code":400,"data":[]}
+    - 自定义响应错误码code,可参考languages/zh_CN/apihelper.php
 
-### 自定义响应体结构
-若要自定义响应体结构,可以  
-- 首先修改config/autoload/apihelper.php中的base_controller配置,指定基本控制器,如  
-```php
-'base_controller' => Hyperf\Apihelper\Controller\BaseController::class,
-```
+- #### 4.2自定义响应体结构
+    若要自定义响应体结构,可以  
+    - 首先修改config/autoload/apihelper.php中的base_controller配置,指定基本控制器,如  
+    ```php
+    'base_controller' => Hyperf\Apihelper\Controller\BaseController::class,
+    ```
+    
+    - 然后基本控制器需要实现`Hyperf\Apihelper\Controller\ControllerInterface`接口.  
+    包括以下几个静态方法:  
+        - `getSchemaResponse(): array`,获取响应体结构,对应模型名称`Response`
+        - `doSuccess($data = [], string $msg = 'success', array $result = []): array`,操作成功时响应
+        - `doFail($code = '400', array $trans = []): array`,操作失败时响应
+        - `doValidationFail(string $msg = ''): array`,执行验证失败时响应
+    
+    - 最后,基本控制器作为控制器的父类,所有的控制器必须继承自该类.  
+    具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
-- 然后基本控制器需要实现`Hyperf\Apihelper\Controller\ControllerInterface`接口.  
-包括以下几个静态方法:  
-    - `getResponseSchema(): array`,获取响应体结构
-    - `doSuccess($data = [], string $msg = 'success', array $result = []): array`,操作成功时响应
-    - `doFail($code = '400', array $trans = []): array`,操作失败时响应
-    - `doValidationFail(string $msg = ''): array`,执行验证失败时响应
+- #### 4.3自定义多层级swagger model
+    对接口响应的swagger结构模型生成,使用注解,如
+    ```php
+  @ApiResponse(code=200, schema={"$ref":"Response"})  
+  ```
+  其中`Response`为接口响应基本模型,由`getSchemaResponse()`方法定义.其他自定义接口响应模型的最外层结构,必须和它相同;非接口响应的一般数据模型,则无此要求.  
+  这里说的"接口响应模型",是指使用@ApiResponse注解的、直接由接口输出的结构模型.  
+  由于应用业务输出数据的多样性,本组件也支持自定义、多层级的模型,按如下规则:
+  - 在控制器中使用`getSchema`为前缀,后跟驼峰规则的结构模型名称,组成的公共静态方法,形如
+  ```php
+  public static function getSchemaAbcXyz(): array
+  ```
+  - 则AbcXyz就是上述方法定义的模型名称,该方法必须返回一个数组,体现该模型的数据结构.
+  - 若要在模型中引用另外一个模型,可以使用$符号来引用,进而实现模型间的嵌套,如
+  ```php
+      // 使用$前缀引用其他结构,首字母大小写都可以(但建议大写),组件将会自动转换为首字母大写的驼峰名称.
+      public static function getSchemaPersons(): array {
+          return [
+              '$person',
+              '$Person',
+              '$Person',
+          ];
+      }
+  ```
+  - 因此,$符号在自定义模型中是关键字,要谨慎使用.
+  - 为了维护方便,建议所有的自定义模型都在同一个父级控制器中定义.本组件在`SchemaModel`中定义.若你在不同控制器中定义不同或相同的模型,也是允许的.不过要注意,因为模型名称是唯一的,本组件仅会使用最先扫描到的模型定义.
+  - 为了测试,本组件内置的模型有`Response`,`Person`,`Persons`,`Department`,`Company`,`TestPersons`,`TestCompany`,你自定义的模型名称应避免和它们同名.
+  - 强调下,自定义swagger模型和自定义响应体结构两者是不同的;swagger模型只是描述API接口文档的,而响应体结构则是接口的输出结果;若接口文档和接口输出有差异,则你应该要检查接口输出逻辑.
+  - 具体可参考[2.使用](#2.使用)的自定义响应模型部分代码,以及`Hyperf\Apihelper\Controller\SchemaModel`
 
-- 最后,基本控制器作为控制器的父类,所有的控制器必须继承自该类.  
-具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
-
-### 自定义前置动作  
+### 5.自定义前置动作  
 可以自定义控制器前置方法,每次在具体动作之前执行.  
 该功能主要是数据初始化,将自定义的数据存储到request属性中,每次请求后销毁,避免控制器协程间的数据混淆.  
 该方法必须严格定义，形如:  
@@ -297,7 +360,7 @@ public function initialization(ServerRequestInterface $request): ServerRequestIn
 具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
 
-### 自定义拦截动作
+### 6.自定义拦截动作
 可以自定义控制器拦截方法,每次在具体动作之前执行.  
 该功能主要是执行逻辑检查(如令牌或权限),当不符合要求时,中止后续具体动作的执行.  
 该方法必须严格定义,形如:  
@@ -309,33 +372,33 @@ public function interceptor(string $controller, string $action, string $route): 
 具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
 
+### 7.校验提示和数据获取
+- #### 7.1校验参数提示
+    - 配置开发环境提示具体参数错误  
+    编辑apihelper.php配置,将`show_params_detail_error`设为true,  
+    接口将显示具体字段验证规则的错误信息,方便前端调试.
+    
+    - 配置生产环境不提示具体参数错误  
+    编辑apihelper.php配置,将`show_params_detail_error`设为false,  
+    接口将隐藏具体字段验证信息,而仅提示"缺少必要的参数,或参数类型错误",减少外部安全攻击的可能.
 
-### 校验参数提示
-- 配置开发环境提示具体参数错误  
-编辑apihelper.php配置,将`show_params_detail_error`设为true,  
-接口将显示具体字段验证规则的错误信息,方便前端调试.
-
-- 配置生产环境不提示具体参数错误  
-编辑apihelper.php配置,将`show_params_detail_error`设为false,  
-接口将隐藏具体字段验证信息,而仅提示"缺少必要的参数,或参数类型错误",减少外部安全攻击的可能.
-
-### 获取验证完的数据
-要获取具体参数,在控制器里面直接使用hyperf官方的方法去获取,如
-```php
-$this->request->header('user-agent');
-$this->request->query('len');
-$this->request->post();
-$this->request->route('id');
-$this->request->getUploadedFiles();
-```
-
-**注意:所有的参数都已经过校验处理,不再是原始的数据.**  
-若校验规则中包含有转换器,接收参数后,已经自动转换,无需再手工转换一次.如  
-- 校验规则中有trim,则' hello '会自动转为'hello'.
-- 校验规则中有int,则字符串'123'会自动转为整型123.
+- #### 7.2获取验证完的数据
+    要获取具体参数,在控制器里面直接使用hyperf官方的方法去获取,如
+    ```php
+    $this->request->header('user-agent');
+    $this->request->query('len');
+    $this->request->post();
+    $this->request->route('id');
+    $this->request->getUploadedFiles();
+    ```
+    
+    **注意:所有的参数都已经过校验处理,不再是原始的数据.**  
+    若校验规则中包含有转换器,接收参数后,已经自动转换,无需再手工转换一次.如  
+    - 校验规则中有trim,则' hello '会自动转为'hello'.
+    - 校验规则中有int,则字符串'123'会自动转为整型123.
 
 
-### swagger生成
+### 8.swagger生成
 
 1.  api请求方法定义包括 `Get`, `Post`, `Put`, `Patch`, `Delete`
 2.  参数定义包括 `Header`, `Query`, `File`, `Form`, `Body`, `Path`
@@ -343,11 +406,17 @@ $this->request->getUploadedFiles();
 4.  ApiVersion接口版本分组并不影响方法里面的实际绑定路由;它只是把控制器里面的接口,归入到某个swagger文件,以便查看.
 5.  生产环境请将配置`output_json`修改为false,关闭swagger.
 
-### v0.1.7升级时注意:  
-- config/autoload/apihelper.php的api配置新增`'base_controller' => \Hyperf\Apihelper\Controller\BaseController::class`项
-- 基本控制器Hyperf\Apihelper\BaseController已删除,将其替换为Hyperf\Apihelper\Controller\BaseController
-- ApiResponse::doSuccess方法已删除,替换为BaseController::doSuccess,或self::doSuccess
-- ApiResponse::doFail方法已删除,替换为BaseController::doFail,或self::doFail
+### 9.升级注意
+- #### v0.1.7升级:  
+    - config/autoload/apihelper.php的api配置新增`'base_controller' => \Hyperf\Apihelper\Controller\BaseController::class`项
+    - 基本控制器Hyperf\Apihelper\BaseController已删除,将其替换为Hyperf\Apihelper\Controller\BaseController
+    - ApiResponse::doSuccess方法已删除,替换为BaseController::doSuccess,或self::doSuccess
+    - ApiResponse::doFail方法已删除,替换为BaseController::doFail,或self::doFail
+
+- #### v0.2.3升级:  
+    - `ControllerInterface::getResponseSchema`已改为`ControllerInterface::getSchemaResponse`
+    - `BaseController::getResponseSchema`已改为`BaseController::getSchemaResponse`
+    - 将你代码中引用到的`getResponseSchema`修改为`getSchemaResponse`
 
 ### 图例
 ![api多版本](tests/01.jpg)  
@@ -359,3 +428,5 @@ $this->request->getUploadedFiles();
 ![default](tests/04.jpg)  
 
 ![array](tests/05.jpg)  
+
+![array](tests/06.jpg)  

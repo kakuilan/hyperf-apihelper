@@ -12,15 +12,25 @@ declare(strict_types=1);
 namespace Hyperf\Apihelper\Controller;
 
 use Hyperf\Apihelper\Annotation\ApiResponse;
+use Hyperf\Apihelper\Swagger\Swagger;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\HttpServer\Contract\ResponseInterface;
 use Kph\Helpers\ArrayHelper;
+use Kph\Helpers\StringHelper;
+use Kph\Helpers\ValidateHelper;
 use Kph\Objects\BaseObject;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use ReflectionException;
 
+/**
+ * Class BaseController
+ * @package Hyperf\Apihelper\Controller
+ */
 abstract class BaseController extends BaseObject implements ControllerInterface {
+
+    use SchemaModel;
 
     /**
      * 全局容器Hyperf\Di\Containe
@@ -56,10 +66,10 @@ abstract class BaseController extends BaseObject implements ControllerInterface 
 
 
     /**
-     * 获取响应体结构
+     * 获取结构-基本响应体(键值对数组)
      * @return array
      */
-    public static function getResponseSchema(): array {
+    public static function getSchemaResponse(): array {
         return self::$baseSchema;
     }
 
@@ -73,7 +83,7 @@ abstract class BaseController extends BaseObject implements ControllerInterface 
      */
     public static function doSuccess($data = [], string $msg = 'success', array $result = []): array {
         if (empty($result)) {
-            $result = self::getResponseSchema();
+            $result = self::getSchemaResponse();
         }
 
         if (is_bool($data)) {
@@ -140,20 +150,52 @@ abstract class BaseController extends BaseObject implements ControllerInterface 
 
 
     /**
+     * 根据结构名获取模型默认值
+     * @param string $schemaStr
+     * @param array $data
+     * @return array
+     */
+    public static function getDefaultDataBySchemaName(string $schemaStr, array $data = []): array {
+        $res = array_merge([], $data);
+        [$schemaName, $schemaMethod] = Swagger::extractSchemaNameMethod($schemaStr);
+        if (method_exists(self::class, $schemaMethod)) {
+            $callback   = [self::class, $schemaMethod];
+            $schemaData = call_user_func($callback);
+            if (is_array($schemaData)) {
+                $res = array_merge($res, $schemaData);
+            }
+        }
+
+        foreach ($res as &$item) {
+            if (is_array($item) && !empty($item)) {
+                $item = self::getDefaultDataBySchemaName('', $item);
+            } elseif (is_string($item) && ValidateHelper::startsWith($item, '$')) {
+                $str = StringHelper::removeBefore($item, '$', true);
+                if (ValidateHelper::isAlphaNumDash($str)) {
+                    $item = self::getDefaultDataBySchemaName($str, []);
+                }
+            }
+        }
+
+        return $res;
+    }
+
+
+    /**
      * 初始化方法(在具体动作之前执行).
      * 不会中止后续具体动作的执行.
      * @param ServerRequestInterface $request
      * @return ServerRequestInterface
      */
-//    public function initialization(ServerRequestInterface $request): ServerRequestInterface {
-//        //自定义处理逻辑,如 将数据存储到$request属性中
-//        $request = $request->withAttribute('test', 'hello world');
-//
-//        //然后在具体动作里面获取数据
-//        $test = $request->getAttribute('test');
-//
-//        return $request;
-//    }
+    //    public function initialization(ServerRequestInterface $request): ServerRequestInterface {
+    //        //自定义处理逻辑,如 将数据存储到$request属性中
+    //        $request = $request->withAttribute('test', 'hello world');
+    //
+    //        //然后在具体动作里面获取数据
+    //        $test = $request->getAttribute('test');
+    //
+    //        return $request;
+    //    }
 
 
     /**
@@ -164,12 +206,12 @@ abstract class BaseController extends BaseObject implements ControllerInterface 
      * @param string $route 路由(url)
      * @return array|null
      */
-//    public function interceptor(string $controller, string $action, string $route) {
-//        if (false) {
-//            return self::doFail();
-//        }
-//
-//        return null;
-//    }
+    //    public function interceptor(string $controller, string $action, string $route) {
+    //        if (false) {
+    //            return self::doFail();
+    //        }
+    //
+    //        return null;
+    //    }
 
 }
