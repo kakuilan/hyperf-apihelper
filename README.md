@@ -332,14 +332,24 @@ class Test extends BaseController {
   - 则AbcXyz就是上述方法定义的模型名称,该方法必须返回一个数组,体现该模型的数据结构.
   - 若要在模型中引用另外一个模型,可以使用$符号来引用,进而实现模型间的嵌套,如
   ```php
-      // 使用$前缀引用其他结构,首字母大小写都可以(但建议大写),组件将会自动转换为首字母大写的驼峰名称.
-      public static function getSchemaPersons(): array {
-          return [
-              '$person',
-              '$Person',
-              '$Person',
-          ];
-      }
+    public static function getSchemaPerson(): array {
+        return [
+            'name'   => 'zhang3',
+            'age'    => 24,
+            'weight' => 64.5,
+            'addr'   => 'home',
+            'male'   => true,
+        ];
+    }
+
+    // 使用$前缀引用其他结构,首字母大小写都可以(但建议大写),组件将会自动转换为首字母大写的驼峰名称.
+    public static function getSchemaPersons(): array {
+        return [
+            '$person',
+            '$Person',
+            '$Person',
+        ];
+    }
   ```
   - 因此,$符号在自定义模型中是关键字,要谨慎使用.
   - 为了维护方便,建议所有的自定义模型都在同一个父级控制器中定义.本组件在`SchemaModel`中定义.若你在不同控制器中定义不同或相同的模型,也是允许的.不过要注意,因为模型名称是唯一的,本组件仅会使用最先扫描到的模型定义.
