@@ -158,8 +158,8 @@ abstract class BaseController extends BaseObject implements ControllerInterface 
     public static function getDefaultDataBySchemaName(string $schemaStr, array $data = []): array {
         $res = array_merge([], $data);
         [$schemaName, $schemaMethod] = Swagger::extractSchemaNameMethod($schemaStr);
-        if (method_exists(self::class, $schemaMethod)) {
-            $callback   = [self::class, $schemaMethod];
+        if (method_exists(static::class, $schemaMethod)) {
+            $callback   = [static::class, $schemaMethod];
             $schemaData = call_user_func($callback);
             if (is_array($schemaData)) {
                 $res = array_merge($res, $schemaData);
