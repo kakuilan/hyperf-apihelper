@@ -345,7 +345,7 @@ class Swagger {
         if ($hasVersion) {
             $this->addGroupInfo($versionAnnotation->group, $versionAnnotation->description, $paths);
         } else {
-            $this->confSwagger['paths'] = array_merge(($this->confSwagger['paths'] ?? []), $paths);
+            $this->confSwagger['paths'] = array_merge_recursive(($this->confSwagger['paths'] ?? []), $paths);
         }
     }
 
@@ -370,7 +370,7 @@ class Swagger {
         }
 
         if (!empty($paths)) {
-            $this->groups[$name]['paths'] = array_merge($this->groups[$name]['paths'], $paths);
+            $this->groups[$name]['paths'] = array_merge_recursive($this->groups[$name]['paths'], $paths);
         }
 
     }

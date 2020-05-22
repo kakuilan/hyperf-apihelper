@@ -303,7 +303,6 @@ class DispatcherFactory extends BaseDispatcherFactory {
             $middlewares = array_merge($middlewares, $this->handleMiddleware($annos));
             $middlewares = array_unique($middlewares);
 
-            $methodAnnos = ApiAnnotation::getMethodMetadata($className, $action);
             foreach ($annos as $anno) {
                 //添加路由
                 if ($anno instanceof Methods) {
