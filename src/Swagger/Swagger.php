@@ -587,8 +587,8 @@ class Swagger {
             // 生成版本分组文件
             foreach ($this->groups as $group) {
                 $swaggerData          = $this->confSwagger;
-                $swaggerData['paths'] = array_merge(($swaggerData['paths'] ?? []), $group['paths']);
-                $swaggerAll['paths']  = array_merge(($swaggerAll['paths'] ?? []), $group['paths']);
+                $swaggerData['paths'] = array_merge_recursive(($swaggerData['paths'] ?? []), $group['paths']);
+                $swaggerAll['paths']  = array_merge_recursive(($swaggerAll['paths'] ?? []), $group['paths']);
 
                 $versionFile = "{$baseName}-{$group['name']}.json";
                 array_push($urls, ['url' => "{$siteUrl}/{$swaggerDir}/{$versionFile}", 'name' => "{$group['name']} -- {$group['description']}"]);
