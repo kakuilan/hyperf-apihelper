@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace Hyperf\Apihelper\Annotation;
 
 use Hyperf\Apihelper\ApiAnnotation;
+use Hyperf\Apihelper\Validation\Validator;
 use Hyperf\Di\Annotation\AbstractAnnotation;
 
 
@@ -41,7 +42,7 @@ class Params extends AbstractAnnotation {
 
 
     /**
-     * @var string 默认值
+     * @var mixed 字段默认值
      */
     public $default;
 
@@ -83,12 +84,18 @@ class Params extends AbstractAnnotation {
 
 
     /**
+     * @var mixed 字段举例值
+     */
+    public $example;
+
+
+    /**
      * Params constructor.
      * @param mixed $value
      */
     public function __construct($value = null) {
         parent::__construct($value);
-        $this->setName()->setDescription()->setDetailRules()->setRquire()->setType()->setDefault()->setEnum();
+        $this->setName()->setDescription()->setDetailRules()->setRquire()->setType()->setDefault()->setEnum()->setExample();
     }
 
 
@@ -241,6 +248,40 @@ class Params extends AbstractAnnotation {
                 $this->enum = $optionArr;
                 break;
             }
+        }
+
+        return $this;
+    }
+
+
+    /**
+     * 设置字段举例值
+     * @return $this
+     */
+    public function setExample() {
+        if (empty($this->_detailRules)) {
+            $this->setDetailRules();
+        }
+        if (empty($this->type)) {
+            $this->setType();
+        }
+
+        if(!empty($this->example)) {
+            $val = strval($this->example);
+            switch ($this->type) {
+                case 'integer':
+                    $val = Validator::conver_int($val);
+                    break;
+                case 'float':
+                    $val = Validator::conver_float($val);
+                    break;
+                case 'boolean':
+                    $val = Validator::conver_boolean($val);
+                    break;
+                default:
+                    break;
+            }
+            $this->example = $val;
         }
 
         return $this;
