@@ -86,8 +86,8 @@ class Test extends BaseController {
 
     /**
      * @Get(path="/user", description="获取用户详情")
-     * @Query(key="id", rule="required|int|gt:0")
-     * @Query(key="u", rule="required|active_url|trim")
+     * @Query(key="id", rule="required|int|gt:0, example="5"")
+     * @Query(key="u", rule="required|active_url|trim", example="http://baidu.com")
      * @Query(key="t", rule="required|starts_with:a")
      * @Query(key="e", rule="required|trim|enum:e,f,g")
      * @Query(key="h", rule="trim|cb_chkHello")
@@ -441,6 +441,11 @@ public function interceptor(string $controller, string $action, string $route): 
 3.  返回结果定义 `ApiResponse` ,json串,如{"status":true,"msg":"success","code":200,"data":[]}
 4.  ApiVersion接口版本分组并不影响方法里面的实际绑定路由;它只是把控制器里面的接口,归入到某个swagger文件,以便查看.
 5.  生产环境请将配置`output_json`修改为false,关闭swagger.
+6. 字段值举例,使用`example`指定.注意:举例值应和字段类型一致.如
+```
+@Query(key="id", rule="required|int|gt:0", example="5")
+```
+
 
 ### 9.升级注意
 - #### v0.1.7升级:  
