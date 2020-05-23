@@ -78,7 +78,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
      */
     public function __construct() {
         $this->initConfig();
-        $this->swagger = new Swagger();
+        $this->swagger = make(Swagger::class);
 
         parent::__construct();
 
