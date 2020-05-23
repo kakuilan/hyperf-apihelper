@@ -17,6 +17,7 @@ use Hyperf\Apihelper\Annotation\Methods;
 use Hyperf\Apihelper\Annotation\Param\Body;
 use Hyperf\Apihelper\Annotation\Params;
 use Hyperf\Apihelper\ApiAnnotation;
+use Hyperf\Apihelper\Controller\BaseController;
 use Hyperf\Apihelper\Controller\ControllerInterface;
 use Hyperf\Contract\ConfigInterface;
 use Hyperf\Server\Exception\RuntimeException;
@@ -167,6 +168,7 @@ class Swagger {
     public static function parseSchemaNestedData(array $arr, array $methods): array {
         ArrayHelper::regularSort($arr);
         foreach ($arr as &$val) {
+            $oriVal = $val;
             $newVal = null;
             if (is_array($val) && !empty($val)) {
                 $ret      = self::parseSchemaNestedData($val, $methods);
@@ -192,16 +194,7 @@ class Swagger {
                 }
             }
 
-            if (empty($newVal)) {
-                $example = null;
-                if (empty($val) && is_array($val)) {
-                    $example = [];
-                } elseif (is_object($val) && ValidateHelper::isEmptyObject($val)) {
-                    $example = new \stdClass();
-                } elseif (is_string($val) || is_int($val) || is_float($val) || is_bool($val)) {
-                    $example = $val;
-                }
-
+            if (is_null($newVal)) {
                 $type   = ApiAnnotation::getTypeByValue($val);
                 $newVal = [
                     'type' => $type,
@@ -212,18 +205,48 @@ class Swagger {
                     $newVal['properties'] = $val;
                 } elseif ($type == 'array') {
                     $newVal['items'] = new \stdClass(); //数组元素是任意类型
-                    $example         = $val;
                 }
 
-                if (!is_null($example)) {
-                    $newVal['example'] = $example;
-                }
+                $newVal['example'] = self::parseExample($oriVal, $methods);
             }
 
             $val = $newVal;
         }
 
         return $arr;
+    }
+
+
+    /**
+     * 将值解析为Example
+     * @param mixed $val
+     * @param array $methods
+     * @return array|string|mixed
+     */
+    public static function parseExample($val, array $methods = []) {
+        if (is_object($val) && !ValidateHelper::isEmptyObject($val)) {
+            $val = ArrayHelper::object2Array($val);
+        }
+
+        if (is_array($val) && !empty($val)) {
+            ArrayHelper::regularSort($val);
+            foreach ($val as &$item) {
+                $item = self::parseExample($item, $methods);
+            }
+        } elseif (is_string($val) && ValidateHelper::startsWith($val, '$')) {
+            $str = StringHelper::removeBefore($val, '$', true);
+            if (ValidateHelper::isAlphaNumDash($str)) {
+                [$schemaName, $schemaMethod] = self::extractSchemaNameMethod($str);
+                if (in_array($schemaMethod, $methods)) {
+                    $val = BaseController::getDefaultDataBySchemaName($schemaName);
+                    if (is_array($val)) {
+                        $val = self::parseExample($val, $methods);
+                    }
+                }
+            }
+        }
+
+        return $val;
     }
 
 
@@ -316,7 +339,6 @@ class Swagger {
 
         /** @var \Hyperf\Apihelper\Annotation\Methods $reqMethod */
         $reqMethod = null;
-
         foreach ($methodAnnotations as $item) {
             if ($item instanceof Methods) {
                 $reqMethod = $item;
@@ -457,6 +479,10 @@ class Swagger {
                 $parameters[$item->name]['enum'] = $item->enum;
             }
 
+            //字段值举例
+            if (!is_null($item->example)) {
+                $parameters[$item->name]['x-example'] = $item->example;
+            }
         }
 
         return array_values($parameters);
