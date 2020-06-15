@@ -125,9 +125,10 @@ class DispatcherFactory extends BaseDispatcherFactory {
         foreach ($collector as $className => $metadata) {
             //是否控制器
             if (isset($metadata['_c'][ApiController::class])) {
+                //控制器中间件
                 $middlewares = $this->handleMiddleware($metadata['_c']);
                 $this->parseController($className);
-                $this->handleController($className, $metadata['_c'][ApiController::class], $metadata['_m'] ?? [], $middlewares);
+                $this->handleController($className, $metadata['_c'][ApiController::class], ($metadata['_m'] ?? []), $middlewares);
             }
         }
 
@@ -168,7 +169,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
             }
 
             //参数类型是否符合
-            foreach ($fn->getParameters() AS $arg) {
+            foreach ($fn->getParameters() as $arg) {
                 if ($arg->getType()->getName() != ServerRequestInterface::class) {
                     throw new RuntimeException("{$className}::{$beforeAction} the parameter type must be " . ServerRequestInterface::class);
                 }
@@ -196,7 +197,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
             }
 
             //参数类型是否符合
-            foreach ($fn->getParameters() AS $arg) {
+            foreach ($fn->getParameters() as $arg) {
                 if ($arg->getType()->getName() != 'string') {
                     throw new RuntimeException("{$className}::{$interceptAction} the parameter type must be string");
                 }
@@ -284,11 +285,11 @@ class DispatcherFactory extends BaseDispatcherFactory {
      * @param string $className 控制器类名
      * @param Controller $controllerAnnos 控制器注解
      * @param array $methodMetadata 方法注解
-     * @param array $middlewares 中间件
+     * @param array $ctrlMiddlewares 控制器中间件
      * @throws ConflictAnnotationException
      * @throws ReflectionException
      */
-    protected function handleController(string $className, Controller $controllerAnnos, array $methodMetadata, array $middlewares = []): void {
+    protected function handleController(string $className, Controller $controllerAnnos, array $methodMetadata, array $ctrlMiddlewares = []): void {
         if (empty($methodMetadata)) {
             return;
         }
@@ -300,7 +301,8 @@ class DispatcherFactory extends BaseDispatcherFactory {
                 continue;
             }
 
-            $middlewares = array_merge($middlewares, $this->handleMiddleware($annos));
+            //方法中间件
+            $middlewares = array_merge($ctrlMiddlewares, $this->handleMiddleware($annos));
             $middlewares = array_unique($middlewares);
 
             foreach ($annos as $anno) {
