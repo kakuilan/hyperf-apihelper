@@ -290,6 +290,7 @@ class Test extends BaseController {
 
 
 ### 3.验证规则
+- 在hyperf启动时提前扫描规则,相比在运行时每次请求都扫描,性能有所提升
 - 组件会先执行Hyperf官方规则,详见[hyperf validation](https://hyperf.wiki/#/zh-cn/validation)
 - 再执行本组件的验证规则,包括:  
   - 转换器,有
