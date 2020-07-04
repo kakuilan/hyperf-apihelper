@@ -359,6 +359,7 @@ class Test extends BaseController {
   - 则AbcXyz就是上述方法定义的模型名称,该方法必须返回一个数组,体现该模型的数据结构.
   - 若要在模型中引用另外一个模型,可以使用$符号来引用,进而实现模型间的嵌套,如
   ```php
+    // 先定义一个基本的数据模型结构
     public static function getSchemaPerson(): array {
         return [
             'name'   => 'zhang3',
@@ -369,7 +370,7 @@ class Test extends BaseController {
         ];
     }
 
-    // 使用$前缀引用其他结构,首字母大小写都可以(但建议大写),组件将会自动转换为首字母大写的驼峰名称.
+    // 再使用$前缀引用其他结构,首字母大小写都可以(但建议大写),组件将会自动转换为首字母大写的驼峰名称.
     public static function getSchemaPersons(): array {
         return [
             '$person',
@@ -382,7 +383,7 @@ class Test extends BaseController {
   - 为了维护方便,建议所有的自定义模型都在同一个父级控制器中定义.本组件在`SchemaModel`中定义.若你在不同控制器中定义不同或相同的模型,也是允许的.不过要注意,因为模型名称是唯一的,本组件仅会使用最先扫描到的模型定义.
   - 为了测试,本组件内置的模型有`Response`,`Person`,`Persons`,`Department`,`Company`,`TestPersons`,`TestCompany`,你自定义的模型名称应避免和它们同名.
   - 强调下,自定义swagger模型和自定义响应体结构两者是不同的;swagger模型只是描述API接口文档的,而响应体结构则是接口的输出结果;若接口文档和接口输出有差异,则你应该要检查接口输出逻辑.
-  - 具体可参考[2.使用](#2使用)的自定义响应模型部分代码,以及`Hyperf\Apihelper\Controller\SchemaModel`
+  - 具体可参考[2.使用](#2使用示例)的自定义响应模型部分代码,以及`Hyperf\Apihelper\Controller\SchemaModel`
 
 
 ### 5.自定义前置动作  
