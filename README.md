@@ -394,7 +394,7 @@ class Test extends BaseController {
 public function initialization(ServerRequestInterface $request): ServerRequestInterface
 ```
 该方法不会中止后续具体动作的执行.  
-方法名可以在config/autoload/apihelper.php中的`controller_antecedent`中指定,默认为initialization  
+方法名可以在config/autoload/apihelper.php中的`controller_antecedent`指定,默认为initialization  
 具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
 
@@ -406,7 +406,7 @@ public function initialization(ServerRequestInterface $request): ServerRequestIn
 public function interceptor(string $controller, string $action, string $route): mixed
 ```
 若该方法返回非空的数组或字符串,则停止执行后续的具体动作.  
-方法名可以在config/autoload/apihelper.php中的`controller_intercept`中指定,默认为interceptor  
+方法名可以在config/autoload/apihelper.php中的`controller_intercept`指定,默认为interceptor  
 具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
 
