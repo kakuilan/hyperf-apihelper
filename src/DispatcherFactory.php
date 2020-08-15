@@ -146,7 +146,6 @@ class DispatcherFactory extends BaseDispatcherFactory {
         // 检查是否继承自基本控制器,以及控制器接口
         $ctrlObj       = new $className();
         $baseCtrlClass = $this->config->get('api.base_controller');
-        $beforeAction  = $this->config->get('api.controller_antecedent');
         if (!($ctrlObj instanceof $baseCtrlClass)) {
             throw new RuntimeException("{$className} must extends from {$baseCtrlClass}.");
         } elseif (!($ctrlObj instanceof ControllerInterface)) {
@@ -154,7 +153,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
         }
 
         // 检查控制器前置方法
-        $beforeAction = $this->config->get('apihelper.api.controller_antecedent');
+        $beforeAction = $this->config->get('api.controller_antecedent');
         if (!empty($beforeAction) && method_exists($className, $beforeAction)) {
             $fn = new ReflectionMethod($className, $beforeAction);
 
@@ -182,7 +181,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
         }
 
         // 检查控制器拦截方法
-        $interceptAction = $this->config->get('apihelper.api.controller_intercept');
+        $interceptAction = $this->config->get('api.controller_intercept');
         if (!empty($interceptAction) && method_exists($className, $interceptAction)) {
             $fn = new ReflectionMethod($className, $interceptAction);
 

@@ -641,8 +641,8 @@ class Swagger {
             $fileList = DirectoryHelper::getFileTree(BASE_PATH . '/public/swagger/', 'file');
             foreach ($fileList as $item) {
                 $ext = FileHelper::getFileExt($item);
-                if ($ext == 'json') {
-                    @unlink($item);
+                if ($ext == 'json' && file_exists($item)) {
+                    unlink($item);
                 }
             }
         }
