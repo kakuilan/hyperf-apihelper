@@ -25,6 +25,7 @@ use Hyperf\Utils\ApplicationContext;
 use Kph\Helpers\ArrayHelper;
 use Kph\Helpers\DirectoryHelper;
 use Kph\Helpers\FileHelper;
+use Kph\Helpers\OsHelper;
 use Kph\Helpers\StringHelper;
 use Kph\Helpers\UrlHelper;
 use Kph\Helpers\ValidateHelper;
@@ -605,7 +606,8 @@ class Swagger {
         //是否开启swagger文档功能
         if ($openSwagger) {
             $http    = $this->confSwagger['schemes'][0] ?? 'http';
-            $siteUrl = UrlHelper::formatUrl(strtolower("{$http}://" . $this->confSwagger['host']));
+            $domain  = OsHelper::getDomain($this->confSwagger['host']);
+            $siteUrl = UrlHelper::formatUrl(strtolower("{$http}://" . $domain));
             $urls    = [];
 
             $swaggerAll = $this->confSwagger; //包含全部版本
