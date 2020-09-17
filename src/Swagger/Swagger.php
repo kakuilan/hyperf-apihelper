@@ -57,7 +57,7 @@ class Swagger {
      * 版本号分组数组,如[ 'v1'=>['name'=>'v1', 'description'=>'some', 'paths'=>[]] ]
      * @var array
      */
-    public $groups;
+    public $groups = [];
 
 
     /**

@@ -229,7 +229,7 @@ class ApiAnnotation {
      * @param object $cache
      */
     public function setRouteCache(object $cache): void {
-        if (!is_null($cache) && !ValidateHelper::isEmptyObject($cache)) {
+        if (!is_null($cache)) {
             $this->routeCache = $cache;
         }
     }
