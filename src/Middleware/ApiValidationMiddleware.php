@@ -103,7 +103,11 @@ class ApiValidationMiddleware extends CoreMiddleware {
         }
 
         if ($routes[1] instanceof Handler) {
-            [$controller, $action] = $this->prepareHandler($routes[1]->callback);
+            if(is_string($routes[1]->callback) || is_array($routes[1]->callback)) {
+                [$controller, $action] = $this->prepareHandler($routes[1]->callback);
+            }else{
+                return $handler->handle($request);
+            }
         } else {
             [$controller, $action] = $this->prepareHandler($routes[1]);
         }
