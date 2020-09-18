@@ -36,7 +36,7 @@ return [
             'version'     => '1.0.0', //API 文档版本
             'title'       => 'HYPERF API DOC', //API 文档标题
         ],
-        'host'                => 'hyperf.io', //站点域名
+        'host'                => env('APP_URL', 'localhost'), //站点域名或URL
         'basePath'            => '', //基础路径,可不改
         'schemes'             => ['http'], //协议
         'securityDefinitions' => [
