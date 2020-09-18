@@ -610,7 +610,8 @@ class Swagger {
             $siteUrl = UrlHelper::formatUrl(strtolower("{$http}://" . $domain));
             $urls    = [];
 
-            $swaggerAll = $this->confSwagger; //包含全部版本
+            $this->confSwagger['host'] = $domain;
+            $swaggerAll                = $this->confSwagger; //包含全部版本
 
             // 生成版本分组文件
             foreach ($this->groups as $group) {
