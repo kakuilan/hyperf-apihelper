@@ -162,7 +162,7 @@ class ApiAnnotation {
      */
     public static function getTypeByRule(string $rule): string {
         $details   = self::parseDetailsByRule($rule);
-        $digitItem = StringHelper::dstrpos($rule, ['gt', 'gte', 'lt', 'lte', 'max', 'min'], true);
+        $digitItem = StringHelper::dstrpos($rule, ['gt', 'gte', 'lt', 'lte', 'max', 'min','between'], true);
 
         if (array_intersect($details, ['integer', 'int'])) {
             return 'integer';
@@ -178,6 +178,8 @@ class ApiAnnotation {
             return 'object';
         } elseif (array_intersect($details, ['file', 'image'])) {
             return 'file';
+        } elseif (array_intersect($details, ['string','trim'])) {
+            return 'string';
         } elseif ($digitItem) {
             foreach ($details as $detail) {
                 if (strpos($detail, ':') && stripos($detail, $digitItem) !== false) {
