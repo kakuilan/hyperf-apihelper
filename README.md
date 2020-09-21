@@ -386,7 +386,8 @@ class Test extends BaseController {
   - 具体可参考[2.使用示例](#2使用示例)的自定义响应模型部分代码,以及`Hyperf\Apihelper\Controller\SchemaModel`
 
 
-### 5.自定义前置动作  
+### 5.自定义前置动作和拦截动作  
+- #### 5.1前置动作
 可以自定义控制器前置方法,每次在具体动作之前执行.  
 该功能主要是数据初始化,将自定义的数据存储到request属性中,每次请求后销毁,避免控制器协程间的数据混淆.  
 该方法必须严格定义，形如:  
@@ -397,8 +398,7 @@ public function initialization(ServerRequestInterface $request): ServerRequestIn
 方法名可以在config/autoload/apihelper.php中的`controller_antecedent`指定,默认为initialization  
 具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
-
-### 6.自定义拦截动作
+- #### 5.2.拦截动作
 可以自定义控制器拦截方法,每次在具体动作之前执行.  
 该功能主要是执行逻辑检查(如令牌或权限),当不符合要求时,中止后续具体动作的执行.  
 该方法必须严格定义,形如:  
@@ -408,6 +408,25 @@ public function interceptor(string $controller, string $action, string $route): 
 若该方法返回非空的数组或字符串,则停止执行后续的具体动作.  
 方法名可以在config/autoload/apihelper.php中的`controller_intercept`指定,默认为interceptor  
 具体可参考`Hyperf\Apihelper\Controller\BaseController`.
+
+
+### 6.接口多版本分组
+针对接口多版本分组的功能,一般的做法是将控制器划分多个命名空间,如`V1.0`、`V2.0`等.  
+本组件提供了`ApiVersion`注解,它可以方便地为控制器绑定一个或多个版本号.  
+*注意*:
+- 该功能将影响绑定的路由,会自动在已定义的路由前加上版本号前缀,实际的路径将改变.  
+- 版本分组名称,只能由英文、数字和下划线组成.  
+当一个控制器里面的接口功能在多次迭代中保持不变时,就可以绑定多个版本号,例如:
+```php
+/**
+ * @ApiController(tag="测试实例", description="测试例子")
+ * @ApiVersion(group="v1", description="第一版本")
+ * @ApiVersion(group="v2", description="第二版本")
+ * @ApiVersion(group="v3", description="第三版本")
+ */
+class Test extends BaseController {}
+```
+
 
 
 ### 7.校验提示和数据获取
@@ -441,9 +460,8 @@ public function interceptor(string $controller, string $action, string $route): 
 1.  api请求方法定义包括 `Get`, `Post`, `Put`, `Patch`, `Delete`
 2.  参数定义包括 `Header`, `Query`, `File`, `Form`, `Body`, `Path`
 3.  返回结果定义 `ApiResponse` ,json串,如{"status":true,"msg":"success","code":200,"data":[]}
-4.  ApiVersion接口版本分组并不影响方法里面的实际绑定路由;它只是把控制器里面的接口,归入到某个swagger文件,以便查看.
-5.  生产环境请将配置`output_json`修改为false,关闭swagger.
-6. 字段值举例,使用`example`指定.注意:举例值应和字段类型一致.如
+4.  生产环境请将配置`output_json`修改为false,关闭swagger.
+5. 字段值举例,使用`example`指定.注意:举例值应和字段类型一致.如
 ```
 @Query(key="id", rule="required|int|gt:0", example="5")
 ```
@@ -461,6 +479,11 @@ public function interceptor(string $controller, string $action, string $route): 
     - `BaseController::getResponseSchema`已改为`BaseController::getSchemaResponse`
     - 将你代码中引用到的`getResponseSchema`修改为`getSchemaResponse`
 
+- #### v0.3.5升级:  
+    - 从v0.3.5起,接口多版本分组功能,会自动在路由前加上版本号前缀,实际路径将发生改变.
+
+
+
 ### 图例
 ![api多版本](tests/01.jpg)  
 
@@ -472,4 +495,4 @@ public function interceptor(string $controller, string $action, string $route): 
 
 ![array](tests/05.jpg)  
 
-![array](tests/06.jpg)  
+![model](tests/06.jpg)  
