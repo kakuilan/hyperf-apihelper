@@ -12,7 +12,6 @@ declare(strict_types=1);
 namespace Hyperf\Apihelper\Middleware;
 
 use Doctrine\Common\Annotations\AnnotationException;
-use Exception;
 use FastRoute\Dispatcher;
 use Hyperf\Apihelper\Annotation\ApiResponse;
 use Hyperf\Apihelper\Annotation\Param\Body;
@@ -44,6 +43,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionException;
 use ReflectionMethod;
+use Exception;
 use Throwable;
 
 

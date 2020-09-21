@@ -23,6 +23,8 @@ return [
         //控制器拦截方法,每次先于具体动作之前执行;若该方法返回非空的数组或字符串,则停止执行后续的具体动作.
         //形如, fn(string $controller, string $action, string $route):mixed
         'controller_intercept'     => 'interceptor',
+        //是否使用版本号路径前缀
+        'use_version_path'         => true,
     ],
 
     //swagger文档配置

@@ -13,6 +13,7 @@ namespace Hyperf\Apihelper\Swagger;
 
 use Doctrine\Common\Annotations\AnnotationException;
 use Hyperf\Apihelper\Annotation\ApiResponse;
+use Hyperf\Apihelper\Annotation\ApiVersion;
 use Hyperf\Apihelper\Annotation\Methods;
 use Hyperf\Apihelper\Annotation\Param\Body;
 use Hyperf\Apihelper\Annotation\Params;
@@ -20,6 +21,7 @@ use Hyperf\Apihelper\ApiAnnotation;
 use Hyperf\Apihelper\Controller\BaseController;
 use Hyperf\Apihelper\Controller\ControllerInterface;
 use Hyperf\Contract\ConfigInterface;
+use Hyperf\Di\Annotation\Inject;
 use Hyperf\Server\Exception\RuntimeException;
 use Hyperf\Utils\ApplicationContext;
 use Kph\Helpers\ArrayHelper;
@@ -30,8 +32,8 @@ use Kph\Helpers\StringHelper;
 use Kph\Helpers\UrlHelper;
 use Kph\Helpers\ValidateHelper;
 use Kph\Objects\BaseObject;
-use ReflectionMethod;
 use ReflectionException;
+use ReflectionMethod;
 
 /**
  * Class Swagger
@@ -307,23 +309,23 @@ class Swagger {
      * @param string $className
      * @param string $methodName
      * @param string $path
+     * @param mixed $version ApiVersion
      * @throws AnnotationException
      */
-    public function addPath(string $className, string $methodName, string $path): void {
+    public function addPath(string $className, string $methodName, string $path, $version = null): void {
         //获取类文件的注解信息
         $classAnnotation   = ApiAnnotation::getClassMetadata($className);
         $methodAnnotations = ApiAnnotation::getMethodMetadata($className, $methodName);
-        $versionAnnotation = ApiAnnotation::getVersionMetadata($className);
 
         $params    = [];
         $paths     = [];
         $responses = [];
 
-        $hasVersion = is_object($versionAnnotation) && !empty($versionAnnotation->group) && is_string($versionAnnotation->group);
         //检查版本号是否合法
+        $hasVersion = is_object($version) && ($version instanceof ApiVersion) && !empty($version->group);
         if ($hasVersion) {
-            if (!preg_match("/^(?!_)[a-zA-Z0-9_]+$/u", $versionAnnotation->group)) {
-                throw new RuntimeException('Version group name can only be in english, numerals, and underscores');
+            if (!ApiAnnotation::isVersion($version->group)) {
+                throw new RuntimeException("Version group name can only be in english, numerals, and underscores:{$className}[{$version->group}]");
             }
         }
 
@@ -366,7 +368,7 @@ class Swagger {
         ];
 
         if ($hasVersion) {
-            $this->addGroupInfo($versionAnnotation->group, $versionAnnotation->description, $paths);
+            $this->addGroupInfo($version->group, $version->description, $paths);
         } else {
             $this->confSwagger['paths'] = array_merge_recursive(($this->confSwagger['paths'] ?? []), $paths);
         }

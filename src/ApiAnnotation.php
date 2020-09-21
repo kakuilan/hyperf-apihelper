@@ -18,6 +18,7 @@ use Hyperf\Apihelper\Annotation\ApiController;
 use Hyperf\Apihelper\Annotation\ApiVersion;
 use Hyperf\Di\Annotation\AnnotationCollector;
 use Hyperf\Di\ReflectionManager;
+use Kph\Helpers\ArrayHelper;
 use Kph\Helpers\StringHelper;
 use Kph\Helpers\ValidateHelper;
 
@@ -68,10 +69,27 @@ class ApiAnnotation {
     /**
      * 获取版本号的元数据
      * @param string $className
-     * @return array|ArrayAccess|mixed|null
+     * @return array
      */
     public static function getVersionMetadata(string $className) {
-        return AnnotationCollector::getClassAnnotation($className, ApiVersion::class);
+        $res            = [];
+        $refCls         = ReflectionManager::reflectClass($className);
+        $reader         = new AnnotationReader();
+        $clsAnnotations = $reader->getClassAnnotations($refCls);
+        if (is_array($clsAnnotations) && !empty($clsAnnotations)) {
+            foreach ($clsAnnotations as $clsAnnotation) {
+                if ($clsAnnotation instanceof ApiVersion) {
+                    if (empty($clsAnnotation->group)) {
+                        $res['0'] = $clsAnnotation;
+                    } else {
+                        $res[$clsAnnotation->group] = $clsAnnotation;
+                    }
+                }
+            }
+            ArrayHelper::regularSort($res);
+        }
+
+        return $res;
     }
 
 
@@ -87,6 +105,16 @@ class ApiAnnotation {
         $reader            = new AnnotationReader();
         $methodAnnotations = $reader->getMethodAnnotations($reflectMethod);
         return $methodAnnotations;
+    }
+
+
+    /**
+     * 是否合法的版本号
+     * @param string $str
+     * @return bool
+     */
+    public static function isVersion(string $str): bool {
+        return empty($str) ? false : (bool)preg_match("/^(?!_)[a-zA-Z0-9_]+$/u", $str);
     }
 
 
@@ -162,7 +190,7 @@ class ApiAnnotation {
      */
     public static function getTypeByRule(string $rule): string {
         $details   = self::parseDetailsByRule($rule);
-        $digitItem = StringHelper::dstrpos($rule, ['gt', 'gte', 'lt', 'lte', 'max', 'min','between'], true);
+        $digitItem = StringHelper::dstrpos($rule, ['gt', 'gte', 'lt', 'lte', 'max', 'min', 'between'], true);
 
         if (array_intersect($details, ['integer', 'int'])) {
             return 'integer';
@@ -178,7 +206,7 @@ class ApiAnnotation {
             return 'object';
         } elseif (array_intersect($details, ['file', 'image'])) {
             return 'file';
-        } elseif (array_intersect($details, ['string','trim'])) {
+        } elseif (array_intersect($details, ['string', 'trim'])) {
             return 'string';
         } elseif ($digitItem) {
             foreach ($details as $detail) {

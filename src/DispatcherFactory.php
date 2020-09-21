@@ -35,7 +35,9 @@ use Hyperf\Di\Exception\ConflictAnnotationException;
 use Hyperf\HttpServer\Annotation\Controller;
 use Hyperf\HttpServer\Annotation\Mapping;
 use Hyperf\HttpServer\Router\DispatcherFactory as BaseDispatcherFactory;
+use Hyperf\HttpServer\Router\RouteCollector;
 use Hyperf\Server\Exception\RuntimeException;
+use Hyperf\Task\Exception as TaskException;
 use Hyperf\Utils\ApplicationContext;
 use Hyperf\Validation\Concerns\ValidatesAttributes;
 use Kph\Consts;
@@ -47,6 +49,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
+use Error;
+use Exception;
 
 
 /**
@@ -295,16 +299,26 @@ class DispatcherFactory extends BaseDispatcherFactory {
             return;
         }
 
-        /** @var ApiVersion $version */
-        $version = AnnotationCollector::list()[$className]['_c'][ApiVersion::class] ?? null;
+        $router     = $this->getRouter($controllerAnnos->server);
+        $basePath   = $this->getPrefix($className, $controllerAnnos->prefix);
+        $versions   = ApiAnnotation::getVersionMetadata($className);
+        $useVerPath = (bool)$this->config->get('api.use_version_path', true);
 
-        $router   = $this->getRouter($controllerAnnos->server);
-        $basePath = $this->getPrefix($className, $controllerAnnos->prefix);
+        $routeAddeds     = [];
+        $addPathToRouter = function ($httpMethod, string $route, $handler, array $options = []) use ($router, $routeAddeds) {
+            $arr = [$httpMethod, $route, $handler];
+            $key = json_encode($arr);
 
-        //路由路径添加版本号
-        if (!is_null($version) && !empty($version->group)) {
-            $basePath = '/' . $version->group . $basePath;
-        }
+            if (!in_array($key, $routeAddeds)) {
+                array_push($routeAddeds, $key);
+                try {
+                    /** @var RouteCollector $router */
+                    $router->addRoute($httpMethod, $route, $handler, $options);
+                } catch (Error $e) {
+                } catch (Exception $e) {
+                }
+            }
+        };
 
         foreach ($methodMetadata as $action => $annos) {
             if (empty($annos)) {
@@ -330,8 +344,18 @@ class DispatcherFactory extends BaseDispatcherFactory {
                         }
                     }
 
-                    $router->addRoute($anno->methods, $path, [$className, $action], ['middleware' => $middlewares,]);
-                    $this->swagger->addPath($className, $action, $path);
+                    //路由路径添加版本号
+                    if (!empty($versions)) {
+                        /** @var ApiVersion $version */
+                        foreach ($versions as $version) {
+                            $vpath = $useVerPath ? ('/' . $version->group . $path) : $path;
+                            $this->swagger->addPath($className, $action, $vpath, $version);
+                            $addPathToRouter($anno->methods, $vpath, [$className, $action], ['middleware' => $middlewares,]);
+                        }
+                    } else {
+                        $this->swagger->addPath($className, $action, $path);
+                        $addPathToRouter($anno->methods, $path, [$className, $action], ['middleware' => $middlewares,]);
+                    }
                 }
             }
         }
