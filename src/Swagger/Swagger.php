@@ -375,9 +375,9 @@ class Swagger {
 
     /**
      * 添加版本分组信息
-     * @param string $name
-     * @param string $desc
-     * @param array $paths
+     * @param string $name 版本名称
+     * @param string $desc 版本描述
+     * @param array $paths 路由信息
      */
     protected function addGroupInfo(string $name, string $desc, array $paths = []): void {
         if (empty($name)) {

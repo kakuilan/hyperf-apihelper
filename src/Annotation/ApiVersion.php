@@ -20,7 +20,7 @@ use Hyperf\Di\Annotation\AbstractAnnotation;
 class ApiVersion extends AbstractAnnotation {
 
     /**
-     * @var string 分组名称,只能有英文、数字和下划线组成
+     * @var string 分组名称,只能由英文、数字和下划线组成
      */
     public $group;
 

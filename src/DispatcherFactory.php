@@ -14,6 +14,7 @@ namespace Hyperf\Apihelper;
 use Doctrine\Common\Annotations\AnnotationException;
 use Hyperf\Apihelper\Annotation\ApiController;
 use Hyperf\Apihelper\Annotation\ApiResponse;
+use Hyperf\Apihelper\Annotation\ApiVersion;
 use Hyperf\Apihelper\Annotation\Methods;
 use Hyperf\Apihelper\Annotation\Param\Body;
 use Hyperf\Apihelper\Annotation\Param\Form;
@@ -28,6 +29,7 @@ use Hyperf\Apihelper\Swagger\Swagger;
 use Hyperf\Apihelper\Validation\Validator;
 use Hyperf\Config\Config;
 use Hyperf\Contract\ConfigInterface;
+use Hyperf\Di\Annotation\AnnotationCollector;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\Di\Exception\ConflictAnnotationException;
 use Hyperf\HttpServer\Annotation\Controller;
@@ -262,8 +264,8 @@ class DispatcherFactory extends BaseDispatcherFactory {
                         }
                     }
 
-                    ksort($hyperfs);
-                    ksort($customs);
+                    ArrayHelper::regularSort($hyperfs);
+                    ArrayHelper::regularSort($customs);
 
                     $rules[$paramType] = [
                         'hyperfs' => $hyperfs,
@@ -293,8 +295,17 @@ class DispatcherFactory extends BaseDispatcherFactory {
             return;
         }
 
+        /** @var ApiVersion $version */
+        $version = AnnotationCollector::list()[$className]['_c'][ApiVersion::class] ?? null;
+
         $router   = $this->getRouter($controllerAnnos->server);
         $basePath = $this->getPrefix($className, $controllerAnnos->prefix);
+
+        //路由路径添加版本号
+        if (!is_null($version) && !empty($version->group)) {
+            $basePath = '/' . $version->group . $basePath;
+        }
+
         foreach ($methodMetadata as $action => $annos) {
             if (empty($annos)) {
                 continue;
@@ -308,6 +319,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
                 //添加路由
                 if ($anno instanceof Methods) {
                     $path = $basePath . '/' . $action;
+
                     if ($anno->path) {
                         //仅仅是路由参数,如 {id}
                         $justId = preg_match('/^{.*}$/', $anno->path);
@@ -383,6 +395,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
         }
 
         $apianno->setRouteCache($cache);
+        $this->tmp = [];
         $container = ApplicationContext::getContainer();
         $container->set(ApiAnnotation::class, $apianno);
     }
