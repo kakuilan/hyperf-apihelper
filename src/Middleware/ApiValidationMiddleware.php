@@ -103,9 +103,9 @@ class ApiValidationMiddleware extends CoreMiddleware {
         }
 
         if ($routes[1] instanceof Handler) {
-            if(is_string($routes[1]->callback) || is_array($routes[1]->callback)) {
+            if (is_string($routes[1]->callback) || is_array($routes[1]->callback)) {
                 [$controller, $action] = $this->prepareHandler($routes[1]->callback);
-            }else{
+            } else {
                 return $handler->handle($request);
             }
         } else {
@@ -210,7 +210,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
                     return is_array($ret) ? $this->response->json($ret) : $this->response->raw($ret);
                 }
             } catch (Exception $e) {
-                throw new RuntimeException($e);
+                throw new RuntimeException($e->getMessage(), $e->getCode(), $e);
             }
         }
 
