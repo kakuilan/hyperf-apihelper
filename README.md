@@ -85,7 +85,7 @@ use Hyperf\Apihelper\Exception\ValidationException;
 class Test extends BaseController {
 
     /**
-     * @Get(path="/user", description="获取用户详情")
+     * @Get(path="/user", summary="接口摘要", description="获取用户详情")
      * @Query(key="id", rule="required|int|gt:0", example="5")
      * @Query(key="u", rule="required|active_url|trim", example="http://baidu.com")
      * @Query(key="t", rule="required|starts_with:a")
