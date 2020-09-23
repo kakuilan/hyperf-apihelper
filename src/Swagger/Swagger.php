@@ -95,6 +95,7 @@ class Swagger {
             $item = [
                 'type'    => ApiAnnotation::getTypeByValue($val),
                 'example' => is_array($val) ? [] : (is_object($val) ? new \stdClass() : $val),
+                'items'   => new \stdClass(), //数组元素是任意类型
             ];
             if ($item['type'] === 'integer') {
                 $item['format'] = 'int64';
@@ -591,6 +592,7 @@ class Swagger {
      */
     public function saveJson() {
         $this->confSwagger['tags'] = array_unique(array_values($this->confSwagger['tags'] ?? []), SORT_REGULAR);
+        ArrayHelper::regularSort($this->confSwagger['tags']);
 
         $saveDir     = DirectoryHelper::formatDir($this->confSwagger['output_dir']);
         $baseName    = $this->confSwagger['output_basename'] ?? 'swagger';

@@ -14,7 +14,7 @@ return [
     //api配置
     'api'     => [
         //是否显示具体的参数错误,生产环境可关闭
-        'show_params_detail_error' => true,
+        'show_params_detail_error' => env('APP_DEBUG', false),
         //基本控制器,app中的控制器必须都继承自该类
         'base_controller'          => BaseController::class,
         //控制器前置方法,每次先于具体动作之前执行,该方法必须仅接受一个ServerRequestInterface类型的参数,并返回.
@@ -29,7 +29,7 @@ return [
 
     //swagger文档配置
     'swagger' => [
-        'output_json'         => true, // 是否生成json文件,以供swagger-ui使用;开发环境打开,为true;生产环境关闭,为false.
+        'output_json'         => env('API_DOC', false), // 是否生成json文件,以供swagger-ui使用;开发环境打开,为true;生产环境关闭,为false.
         'output_dir'          => BASE_PATH . '/public/swagger', //swagger目录,必须在public下,可不改
         'output_basename'     => 'swagger', //基本名
         'swagger'             => '2.0', //OpenAPI 规范的版本
