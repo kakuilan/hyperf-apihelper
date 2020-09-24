@@ -588,6 +588,31 @@ class Swagger {
 
 
     /**
+     * 获取目录下的文件
+     * @param string $path
+     * @return array
+     */
+    public function getFiles(string $path): array {
+        $res  = [];
+        $path = DirectoryHelper::formatDir($path);
+        if (!is_dir($path)) {
+            return $res;
+        }
+
+        $dp = dir($path);
+        while ($file = $dp->read()) {
+            $filepath = $path . $file;
+            if ($file != "." && $file != ".." && is_file($filepath)) {
+                array_push($res, $filepath);
+            }
+        }
+        @$dp->close();
+
+        return $res;
+    }
+
+
+    /**
      * 生成json文件
      */
     public function saveJson() {
@@ -645,7 +670,7 @@ class Swagger {
             file_put_contents($htmlFile, $content);
         } else {
             // 删除 *.json文件
-            $fileList = DirectoryHelper::getFileTree(BASE_PATH . '/public/swagger/', 'file');
+            $fileList = $this->getFiles(BASE_PATH . '/public/swagger');
             foreach ($fileList as $item) {
                 $ext = FileHelper::getFileExt($item);
                 if ($ext == 'json' && file_exists($item)) {
