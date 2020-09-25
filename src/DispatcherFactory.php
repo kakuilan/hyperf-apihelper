@@ -268,8 +268,8 @@ class DispatcherFactory extends BaseDispatcherFactory {
                         }
                     }
 
-                    ArrayHelper::regularSort($hyperfs);
-                    ArrayHelper::regularSort($customs);
+                    ArrayHelper::regularSort($hyperfs, true);
+                    ArrayHelper::regularSort($customs, true);
 
                     $rules[$paramType] = [
                         'hyperfs' => $hyperfs,

@@ -26,7 +26,7 @@
         "ext-json": "*",
         "hyperf/utils": "^1.1|^2.0",
         "hyperf/validation": "^1.1|^2.0",
-        "kakuilan/php-helper": "^0.2.0"
+        "kakuilan/php-helper": "^0.2.4"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^2.14",

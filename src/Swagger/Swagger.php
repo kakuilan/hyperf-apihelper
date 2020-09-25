@@ -354,12 +354,14 @@ class Swagger {
         }
 
         //分组标签
-        $tag                             = $classAnnotation->tag ?: $className;
-        $this->confSwagger['tags'][$tag] = ['name' => $tag, 'description' => $classAnnotation->description,];
+        $tagName = $classAnnotation->tag ?: $className;
+        $tagInfo = ['name' => $tagName, 'description' => $classAnnotation->description,];
+        $method  = strtolower($reqMethod->methods[0]);
 
-        $method                = strtolower($reqMethod->methods[0]);
+        $this->confSwagger['tags'][$tagName] = $tagInfo;
+
         $paths[$path][$method] = [
-            'tags'        => [$tag,],
+            'tags'        => [$tagName,],
             'summary'     => $reqMethod->summary,
             'parameters'  => $this->makeParameters($params, $path), //接口默认接收的MIME类型
             'consumes'    => ['application/x-www-form-urlencoded', 'application/json', 'multipart/form-data',], //接口默认的响应类型
@@ -369,6 +371,7 @@ class Swagger {
         ];
 
         if ($hasVersion) {
+            $this->confSwagger['version_tags'][$version->group][$tagName] = $tagInfo;
             $this->addGroupInfo($version->group, $version->description, $paths);
         } else {
             $this->confSwagger['paths'] = array_merge_recursive(($this->confSwagger['paths'] ?? []), $paths);
@@ -638,13 +641,24 @@ class Swagger {
             $urls   = [];
 
             $this->confSwagger['host'] = $full;
-            $swaggerAll                = $this->confSwagger; //包含全部版本
+
+            $versionTags = $this->confSwagger['version_tags'] ?? [];
+            unset($this->confSwagger['version_tags']);
+
+            $swaggerAll = $this->confSwagger; //包含全部版本
 
             // 生成版本分组文件
             foreach ($this->groups as $group) {
                 $swaggerData          = $this->confSwagger;
                 $swaggerData['paths'] = array_merge_recursive(($swaggerData['paths'] ?? []), $group['paths']);
                 $swaggerAll['paths']  = array_merge_recursive(($swaggerAll['paths'] ?? []), $group['paths']);
+
+                // 当前版本的tags
+                $currTags = $versionTags[$group['name']] ?? [];
+                if (!empty($currTags)) {
+                    ArrayHelper::regularSort($currTags);
+                    $swaggerData['tags'] = $currTags;
+                }
 
                 $versionFile = "{$baseName}-{$group['name']}.json";
                 array_push($urls, ['url' => "./{$versionFile}", 'name' => "{$group['name']} -- {$group['description']}"]);
