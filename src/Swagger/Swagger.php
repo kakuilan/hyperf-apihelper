@@ -623,9 +623,6 @@ class Swagger {
         $baseName    = $this->confSwagger['output_basename'] ?? 'swagger';
         $openSwagger = boolval($this->confSwagger['output_json']);
 
-        $swaggerDir = str_replace(DirectoryHelper::formatDir(BASE_PATH . '/public'), '', $saveDir);
-        $swaggerDir = rtrim($swaggerDir, '/');
-
         if (empty($saveDir)) {
             return;
         }
