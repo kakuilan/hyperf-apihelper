@@ -21,7 +21,9 @@ use Kph\Helpers\StringHelper;
 use Kph\Helpers\ValidateHelper;
 use Kph\Objects\BaseObject;
 use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionException;
 
 /**
@@ -213,5 +215,18 @@ abstract class BaseController extends BaseObject implements ControllerInterface 
     //
     //        return null;
     //    }
+
+
+    /**
+     * 后置方法(在具体动作之后执行,无论是否执行了拦截方法).
+     * @param ServerRequestInterface $request
+     * @param PsrResponseInterface $response
+     */
+    //    public function after(ServerRequestInterface $request, PsrResponseInterface $response): void {
+    //        $uri  = $request->getRequestTarget();
+    //        $code = $response->getStatusCode();
+    //        printf("after action finish: code[%d] url[%s]\r", $code, $uri);
+    //    }
+
 
 }

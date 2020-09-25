@@ -36,7 +36,7 @@ use Hyperf\HttpServer\Annotation\Controller;
 use Hyperf\HttpServer\Annotation\Mapping;
 use Hyperf\HttpServer\Router\DispatcherFactory as BaseDispatcherFactory;
 use Hyperf\HttpServer\Router\RouteCollector;
-use Hyperf\Server\Exception\RuntimeException;
+use Hyperf\Server\Exception\ServerRuntimeException as ServerRuntimeException;
 use Hyperf\Task\Exception as TaskException;
 use Hyperf\Utils\ApplicationContext;
 use Hyperf\Validation\Concerns\ValidatesAttributes;
@@ -45,10 +45,12 @@ use Kph\Helpers\ArrayHelper;
 use Kph\Helpers\StringHelper;
 use Kph\Objects\BaseObject;
 use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
+use ReflectionParameter;
 use Error;
 use Exception;
 
@@ -122,9 +124,9 @@ class DispatcherFactory extends BaseDispatcherFactory {
         //检查基本控制器配置
         $baseCtrlClass = $this->config->get('api.base_controller');
         if (empty($baseCtrlClass)) {
-            throw new RuntimeException("api.base_controller can not be empty.");
+            throw new ServerRuntimeException("api.base_controller can not be empty.");
         } elseif (!class_exists($baseCtrlClass)) {
-            throw new RuntimeException("class: {$baseCtrlClass} does not exist.");
+            throw new ServerRuntimeException("class: {$baseCtrlClass} does not exist.");
         }
 
         $routes = [];
@@ -153,9 +155,9 @@ class DispatcherFactory extends BaseDispatcherFactory {
         $ctrlObj       = new $className();
         $baseCtrlClass = $this->config->get('api.base_controller');
         if (!($ctrlObj instanceof $baseCtrlClass)) {
-            throw new RuntimeException("{$className} must extends from {$baseCtrlClass}.");
+            throw new ServerRuntimeException("{$className} must extends from {$baseCtrlClass}.");
         } elseif (!($ctrlObj instanceof ControllerInterface)) {
-            throw new RuntimeException("{$baseCtrlClass} must implements " . ControllerInterface::class);
+            throw new ServerRuntimeException("{$baseCtrlClass} must implements " . ControllerInterface::class);
         }
 
         // 检查控制器前置方法
@@ -164,25 +166,25 @@ class DispatcherFactory extends BaseDispatcherFactory {
             $fn = new ReflectionMethod($className, $beforeAction);
 
             if (!$fn->isPublic()) {
-                throw new RuntimeException("{$className}::{$beforeAction} must be public method.");
+                throw new ServerRuntimeException("{$className}::{$beforeAction} must be public method.");
             }
 
             //检查该方法的参数是否符合要求
             $paramNum = $fn->getNumberOfParameters();
             if ($paramNum != 1) {
-                throw new RuntimeException("{$className}::{$beforeAction} must has only one parameter.");
+                throw new ServerRuntimeException("{$className}::{$beforeAction} must has only one parameter.");
             }
 
             //参数类型是否符合
             foreach ($fn->getParameters() as $arg) {
                 if ($arg->getType()->getName() != ServerRequestInterface::class) {
-                    throw new RuntimeException("{$className}::{$beforeAction} the parameter type must be " . ServerRequestInterface::class);
+                    throw new ServerRuntimeException("{$className}::{$beforeAction} the parameter type must be " . ServerRequestInterface::class);
                 }
             }
 
             //是否有返回值
             if (!$fn->hasReturnType() || $fn->getReturnType()->getName() != ServerRequestInterface::class) {
-                throw new RuntimeException("{$className}::{$beforeAction} the return type must be " . ServerRequestInterface::class);
+                throw new ServerRuntimeException("{$className}::{$beforeAction} the return type must be " . ServerRequestInterface::class);
             }
         }
 
@@ -192,20 +194,53 @@ class DispatcherFactory extends BaseDispatcherFactory {
             $fn = new ReflectionMethod($className, $interceptAction);
 
             if (!$fn->isPublic()) {
-                throw new RuntimeException("{$className}::{$interceptAction} must be public method.");
+                throw new ServerRuntimeException("{$className}::{$interceptAction} must be public method.");
             }
 
             //检查该方法的参数是否符合要求
             $paramNum = $fn->getNumberOfParameters();
             if ($paramNum != 3) {
-                throw new RuntimeException("{$className}::{$interceptAction} must has three parameter.");
+                throw new ServerRuntimeException("{$className}::{$interceptAction} must has three parameter.");
             }
 
             //参数类型是否符合
             foreach ($fn->getParameters() as $arg) {
                 if ($arg->getType()->getName() != 'string') {
-                    throw new RuntimeException("{$className}::{$interceptAction} the parameter type must be string");
+                    throw new ServerRuntimeException("{$className}::{$interceptAction} the parameter type must be string");
                 }
+            }
+        }
+
+        // 检查控制器后置方法
+        $afterAction = $this->config->get('api.controller_subsequent');
+        if (!empty($afterAction) && method_exists($className, $interceptAction)) {
+            $fn = new ReflectionMethod($className, $afterAction);
+
+            if (!$fn->isPublic()) {
+                throw new ServerRuntimeException("{$className}::{$afterAction} must be public method.");
+            }
+
+            //检查该方法的参数是否符合要求
+            $paramNum = $fn->getNumberOfParameters();
+            if ($paramNum != 2) {
+                throw new ServerRuntimeException("{$className}::{$interceptAction} must has two parameter.");
+            }
+
+            /** @var ReflectionParameter $firstArg */
+            $firstArg = $fn->getParameters()[0];
+            if ($firstArg->getClass()->getName() != ServerRequestInterface::class) {
+                throw new ServerRuntimeException("{$className}::{$afterAction} the first parameter type must be " . ServerRequestInterface::class);
+            }
+
+            /** @var ReflectionParameter $firstArg */
+            $secondArg = $fn->getParameters()[1];
+            if ($secondArg->getClass()->getName() != ResponseInterface::class) {
+                throw new ServerRuntimeException("{$className}::{$afterAction} the second parameter type must be " . ResponseInterface::class);
+            }
+
+            //是否有返回值
+            if ($fn->returnsReference() !== false || ($fn->hasReturnType() && $fn->getReturnType()->getName() != 'void')) {
+                throw new ServerRuntimeException("{$className}::{$afterAction} must have no return value.");
             }
         }
 
@@ -264,7 +299,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
                         if (method_exists(ValidatesAttributes::class, $hyperfMethod)) {
                             $hyperfs[$fieldName][] = $detail;
                         } elseif (!in_array($detail, ArrayHelper::multiArrayValues($customs))) { //非hyperf规则,且非本组件规则
-                            throw new RuntimeException("The rule not defined: {$detail}");
+                            throw new ServerRuntimeException("The rule not defined: {$detail}");
                         }
                     }
 
@@ -372,13 +407,13 @@ class DispatcherFactory extends BaseDispatcherFactory {
         $fn = new ReflectionMethod($className, $action);
 
         if (!$fn->isPublic()) {
-            throw new RuntimeException("{$className}::{$action} must be public method.");
+            throw new ServerRuntimeException("{$className}::{$action} must be public method.");
         }
 
         //检查该方法的参数是否符合要求
         $paramNum = $fn->getNumberOfParameters();
         if ($paramNum != 3) {
-            throw new RuntimeException("{$className}::{$action} must has three parameter.");
+            throw new ServerRuntimeException("{$className}::{$action} must has three parameter.");
         }
 
         $parames = $fn->getParameters();
@@ -387,16 +422,16 @@ class DispatcherFactory extends BaseDispatcherFactory {
         // 第三个参数(参数选项),类型array
         if ($parames[1]->getType()->getName() != 'string') {
             $name = $parames[1]->getName();
-            throw new RuntimeException("{$className}::{$action} the 2rd parameter[{$name}] type must be string");
+            throw new ServerRuntimeException("{$className}::{$action} the 2rd parameter[{$name}] type must be string");
         }
         if ($parames[2]->getType()->getName() != 'array') {
             $name = $parames[2]->getName();
-            throw new RuntimeException("{$className}::{$action} the 3rd parameter[{$name}] type must be array");
+            throw new ServerRuntimeException("{$className}::{$action} the 3rd parameter[{$name}] type must be array");
         }
 
         //是否有返回值
         if (!$fn->hasReturnType() || $fn->getReturnType()->getName() != 'array') {
-            throw new RuntimeException("{$className}::{$action} the return type must be array");
+            throw new ServerRuntimeException("{$className}::{$action} the return type must be array");
         }
     }
 

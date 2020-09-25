@@ -128,6 +128,23 @@ class ApiValidationMiddleware extends CoreMiddleware {
             $request = $beforeRet;
         }
 
+        //检查控制器后置方法
+        $subsequentAction = $globalConf->get('apihelper.api.controller_subsequent');
+        $subsequentAction = !empty($subsequentAction) && method_exists($controllerInstance, $subsequentAction) ? $subsequentAction : null;
+
+        //确保执行后置方法
+        $doAfter = function (ResponseInterface $response) use ($request, $controllerInstance, $subsequentAction): ResponseInterface {
+            if ($subsequentAction) {
+                try {
+                    call_user_func_array([$controllerInstance, $subsequentAction], [$request, $response]);
+                } catch (Exception $e) {
+                    throw new RuntimeException($e->getMessage(), $e->getCode(), $e);
+                }
+            }
+
+            return $response;
+        };
+
         $ruleObj       = $this->container->get(ApiAnnotation::class)->getRouteCache();
         $ctrlAct       = $controller . Consts::PAAMAYIM_NEKUDOTAYIM . $action;
         $baseCtrlClass = $globalConf->get('apihelper.api.base_controller');
@@ -138,7 +155,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
                 $data = [Body::NAME => $request->getBody()->getContents()];
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeBody, $data, [], $controllerInstance);
                 if (!empty($error)) {
-                    return $this->response->json($baseCtrlClass::doValidationFail($error));
+                    return $doAfter($this->response->json($baseCtrlClass::doValidationFail($error)));
                 }
                 $request = $request->withBody(new SwooleStream($data[Body::NAME] ?? ''));
             }
@@ -155,7 +172,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
             if (isset($ruleObj->$ctrlAct->$typeHeader)) {
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeHeader, $headers, $allData, $controllerInstance);
                 if (!empty($error)) {
-                    return $this->response->json($baseCtrlClass::doValidationFail($error));
+                    return $doAfter($this->response->json($baseCtrlClass::doValidationFail($error)));
                 }
             }
 
@@ -164,7 +181,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
                 $pathData = $routes[2] ?? [];
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typePath, $pathData, $allData, $controllerInstance);
                 if (!empty($error)) {
-                    return $this->response->json($baseCtrlClass::doValidationFail($error));
+                    return $doAfter($this->response->json($baseCtrlClass::doValidationFail($error)));
                 }
             }
 
@@ -172,7 +189,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
             if (isset($ruleObj->$ctrlAct->$typeQuery)) {
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeQuery, $queryData, $allData, $controllerInstance);
                 if (!empty($error)) {
-                    return $this->response->json($baseCtrlClass::doValidationFail($error));
+                    return $doAfter($this->response->json($baseCtrlClass::doValidationFail($error)));
                 }
                 $request = $request->withQueryParams($data);
             }
@@ -181,7 +198,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
             if (isset($ruleObj->$ctrlAct->$typeForm)) {
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeForm, $postData, $allData, $controllerInstance);
                 if (!empty($error)) {
-                    return $this->response->json($baseCtrlClass::doValidationFail($error));
+                    return $doAfter($this->response->json($baseCtrlClass::doValidationFail($error)));
                 }
                 $request = $request->withParsedBody($data);
             }
@@ -191,7 +208,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
             if (isset($ruleObj->$ctrlAct->$typeFile)) {
                 [$data, $error] = $this->checkRules($ruleObj->$ctrlAct->$typeFile, $request->getUploadedFiles(), $allData, $controllerInstance);
                 if (!empty($error)) {
-                    return $this->response->json($baseCtrlClass::doValidationFail($error));
+                    return $doAfter($this->response->json($baseCtrlClass::doValidationFail($error)));
                 }
                 $request = $request->withUploadedFiles($data);
             }
@@ -207,14 +224,16 @@ class ApiValidationMiddleware extends CoreMiddleware {
                 $ret = call_user_func_array([$controllerInstance, $interceptAction], [$controller, $action, ($routes[1]->route ?? '')]);
                 //若返回非空的数组或字符串,则终止后续动作的执行
                 if (!empty($ret) && (is_array($ret) || is_string($ret))) {
-                    return is_array($ret) ? $this->response->json($ret) : $this->response->raw($ret);
+                    return $doAfter(is_array($ret) ? $this->response->json($ret) : $this->response->raw($ret));
                 }
             } catch (Exception $e) {
                 throw new RuntimeException($e->getMessage(), $e->getCode(), $e);
             }
         }
 
-        return $handler->handle($request);
+        $response = $handler->handle($request);
+
+        return $doAfter($response);
     }
 
 

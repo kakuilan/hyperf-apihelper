@@ -23,6 +23,9 @@ return [
         //控制器拦截方法,每次先于具体动作之前执行;若该方法返回非空的数组或字符串,则停止执行后续的具体动作.
         //形如, fn(string $controller, string $action, string $route):mixed
         'controller_intercept'     => 'interceptor',
+        //控制器后置方法,每次在具体动作之后执行;该方法必须仅接受一个ServerRequestInterface类型、一个ResponseInterface类型的两个参数,无返回值.
+        //形如, fn(ServerRequestInterface $request, ResponseInterface $response):void
+        'controller_subsequent'    => 'after',
         //是否使用版本号路径前缀
         'use_version_path'         => true,
     ],
