@@ -36,7 +36,7 @@ use Hyperf\HttpServer\Annotation\Controller;
 use Hyperf\HttpServer\Annotation\Mapping;
 use Hyperf\HttpServer\Router\DispatcherFactory as BaseDispatcherFactory;
 use Hyperf\HttpServer\Router\RouteCollector;
-use Hyperf\Server\Exception\ServerRuntimeException as ServerRuntimeException;
+use Hyperf\Server\Exception\RuntimeException as ServerRuntimeException;
 use Hyperf\Task\Exception as TaskException;
 use Hyperf\Utils\ApplicationContext;
 use Hyperf\Validation\Concerns\ValidatesAttributes;
