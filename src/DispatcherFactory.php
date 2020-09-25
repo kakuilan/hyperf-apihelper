@@ -213,7 +213,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
 
         // 检查控制器后置方法
         $afterAction = $this->config->get('api.controller_subsequent');
-        if (!empty($afterAction) && method_exists($className, $interceptAction)) {
+        if (!empty($afterAction) && method_exists($className, $afterAction)) {
             $fn = new ReflectionMethod($className, $afterAction);
 
             if (!$fn->isPublic()) {
