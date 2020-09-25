@@ -95,8 +95,12 @@ class Swagger {
             $item = [
                 'type'    => ApiAnnotation::getTypeByValue($val),
                 'example' => is_array($val) ? [] : (is_object($val) ? new \stdClass() : $val),
-                'items'   => new \stdClass(), //数组元素是任意类型
             ];
+
+            if (in_array($item['type'], ['object', 'array'])) {
+                $item['items'] = new \stdClass(); //数组元素是任意类型
+            }
+
             if ($item['type'] === 'integer') {
                 $item['format'] = 'int64';
             }
