@@ -634,10 +634,9 @@ class Swagger {
 
         //是否开启swagger文档功能
         if ($openSwagger) {
-            $host   = $this->confSwagger['host'];
-            $domain = OsHelper::getDomain($host);
-            $port   = substr($host, strripos($host, ":") + 1);
-            $port   = strlen($port) > 0 ? $port : null;
+            $domain = OsHelper::getDomain($this->confSwagger['host']);
+            $urlArr = parse_url($this->confSwagger['host']);
+            $port   = $urlArr['port'] ?? '';
             $full   = $domain . ($port ? ":" . $port : '');
             $urls   = [];
 
