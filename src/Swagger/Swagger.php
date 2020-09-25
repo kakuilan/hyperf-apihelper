@@ -634,12 +634,12 @@ class Swagger {
 
         //是否开启swagger文档功能
         if ($openSwagger) {
-            $host    = $this->confSwagger['host'];
-            $domain  = OsHelper::getDomain($host);
-            $port    = substr($host,strripos($host,":") + 1);
-            $port    = strlen($port) > 0 ? $port : null;
-            $full    = $domain . ($port ?":".$port: '');
-            $urls    = [];
+            $host   = $this->confSwagger['host'];
+            $domain = OsHelper::getDomain($host);
+            $port   = substr($host, strripos($host, ":") + 1);
+            $port   = strlen($port) > 0 ? $port : null;
+            $full   = $domain . ($port ? ":" . $port : '');
+            $urls   = [];
 
             $this->confSwagger['host'] = $full;
             $swaggerAll                = $this->confSwagger; //包含全部版本
@@ -651,7 +651,7 @@ class Swagger {
                 $swaggerAll['paths']  = array_merge_recursive(($swaggerAll['paths'] ?? []), $group['paths']);
 
                 $versionFile = "{$baseName}-{$group['name']}.json";
-                array_push($urls, ['url' => "/{$versionFile}", 'name' => "{$group['name']} -- {$group['description']}"]);
+                array_push($urls, ['url' => "./{$versionFile}", 'name' => "{$group['name']} -- {$group['description']}"]);
 
                 $filePath = $saveDir . $versionFile;
                 file_put_contents($filePath, json_encode($swaggerData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
@@ -659,7 +659,7 @@ class Swagger {
 
             // 全部版本的接口
             $baseName .= ".json";
-            array_unshift($urls, ['url' => "/{$baseName}", 'name' => "all version apis"]);
+            array_unshift($urls, ['url' => "./{$baseName}", 'name' => "all version apis"]);
             $filePath = $saveDir . $baseName;
             file_put_contents($filePath, json_encode($swaggerAll, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
