@@ -10,6 +10,7 @@ hyperf api and swagger helper.
 - 支持自定义多层级swagger model.
 - 支持自定义前置动作.
 - 支持自定义拦截动作.
+- 支持自定义后置动作.
 
 
 ### 0.安装
@@ -49,9 +50,7 @@ return [
 - 修改config/autoload/dependencies.php依赖配置,如
 ```php
 return [
-    'dependencies' => [
-        Hyperf\HttpServer\Router\DispatcherFactory::class => Hyperf\Apihelper\DispatcherFactory::class
-    ],
+    Hyperf\HttpServer\Router\DispatcherFactory::class => Hyperf\Apihelper\DispatcherFactory::class
 ];
 ```
 
@@ -381,34 +380,48 @@ class Test extends BaseController {
   ```
   - 因此,$符号在自定义模型中是关键字,要谨慎使用.
   - 为了维护方便,建议所有的自定义模型都在同一个父级控制器中定义.本组件在`SchemaModel`中定义.若你在不同控制器中定义不同或相同的模型,也是允许的.不过要注意,因为模型名称是唯一的,本组件仅会使用最先扫描到的模型定义.
-  - 为了测试,本组件内置的模型有`Response`,`Person`,`Persons`,`Department`,`Company`,`TestPersons`,`TestCompany`,你自定义的模型名称应避免和它们同名.
+  - 为了测试,本组件内置的模型有如下几个,你自定义的模型名称应避免和它们相同:  
+  `Response`,`Person`,`Persons`,`Department`,`Company`,`TestPersons`,`TestCompany`  
   - 强调下,自定义swagger模型和自定义响应体结构两者是不同的;swagger模型只是描述API接口文档的,而响应体结构则是接口的输出结果;若接口文档和接口输出有差异,则你应该要检查接口输出逻辑.
   - 具体可参考[2.使用示例](#2使用示例)的自定义响应模型部分代码,以及`Hyperf\Apihelper\Controller\SchemaModel`
 
 
-### 5.自定义前置动作和拦截动作  
+### 5.自定义前置动作、拦截动作和后置动作  
 - #### 5.1前置动作
-可以自定义控制器前置方法,每次在具体动作之前执行.  
-该功能主要是数据初始化,将自定义的数据存储到request属性中,每次请求后销毁,避免控制器协程间的数据混淆.  
-该方法必须严格定义，形如:  
-```php
-public function initialization(ServerRequestInterface $request): ServerRequestInterface
-```
-该方法不会中止后续具体动作的执行.  
-方法名可以在config/autoload/apihelper.php中的`controller_antecedent`指定,默认为initialization  
-具体可参考`Hyperf\Apihelper\Controller\BaseController`.
+    可以自定义控制器前置方法,每次在具体动作之前执行.  
+    该功能主要是数据初始化,将自定义的数据存储到request属性中,每次请求后销毁,避免控制器协程间的数据混淆.  
+    该方法必须严格定义，形如:  
+    ```php
+    public function fn(ServerRequestInterface $request): ServerRequestInterface
+    ```
+    该方法不会中止后续具体动作的执行.  
+    方法名可以在config/autoload/apihelper.php中的`controller_antecedent`指定,默认为`initialization`  
+    具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
-- #### 5.2.拦截动作
-可以自定义控制器拦截方法,每次在具体动作之前执行.  
-该功能主要是执行逻辑检查(如令牌或权限),当不符合要求时,中止后续具体动作的执行.  
-该方法必须严格定义,形如:  
-```php
-public function interceptor(string $controller, string $action, string $route): mixed
-```
-若该方法返回非空的数组或字符串,则停止执行后续的具体动作.  
-方法名可以在config/autoload/apihelper.php中的`controller_intercept`指定,默认为interceptor  
-具体可参考`Hyperf\Apihelper\Controller\BaseController`.
+- #### 5.2拦截动作
+    可以自定义控制器拦截方法,每次在具体动作之前执行.  
+    该功能主要是执行逻辑检查(如令牌或权限),当不符合要求时,中止后续具体动作的执行.  
+    该方法必须严格定义,形如:  
+    ```php
+    public function fn(string $controller, string $action, string $route): mixed
+    ```
+    若该方法返回非空的数组或字符串,则停止执行后续的具体动作.  
+    方法名可以在config/autoload/apihelper.php中的`controller_intercept`指定,默认为`interceptor`  
+    具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
+- #### 5.3后置动作
+    可以自定义控制器后置方法,每次在具体动作之后执行,无论是否执行了拦截方法.  
+    该功能主要是做一些日志收集和数据统计等.  
+    该方法必须严格定义,形如:  
+    ```php
+    public function fn(ServerRequestInterface $request, ResponseInterface $response): void
+    ```
+    方法名可以在config/autoload/apihelper.php中的`controller_subsequent`指定,默认为`after`  
+    注意:  
+    - *请不要在方法中对$request和$response这两个对象做修改*  
+    - *而仅是使用它们的方法去获取相应的属性值*  
+    
+    具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
 ### 6.接口多版本分组
 针对接口多版本分组的功能,一般的做法是将控制器划分多个命名空间,如`V1.0`、`V2.0`等.  
@@ -470,7 +483,8 @@ class Test extends BaseController {}
 
 ### 9.升级注意
 - #### v0.1.7升级:  
-    - config/autoload/apihelper.php的api配置新增`'base_controller' => \Hyperf\Apihelper\Controller\BaseController::class`项
+    - config/autoload/apihelper.php的api新增配置项  
+    `'base_controller' => \Hyperf\Apihelper\Controller\BaseController::class`
     - 基本控制器Hyperf\Apihelper\BaseController已删除,将其替换为Hyperf\Apihelper\Controller\BaseController
     - ApiResponse::doSuccess方法已删除,替换为BaseController::doSuccess,或self::doSuccess
     - ApiResponse::doFail方法已删除,替换为BaseController::doFail,或self::doFail
