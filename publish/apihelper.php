@@ -41,7 +41,7 @@ return [
             'version'     => '1.0.0', //API版本
             //API文档描述,支持markdown语法
             'description' => <<<EOF
-hyperf swagger api desc
+#####  hyperf swagger api desc
 EOF,
         ],
         'host'                => env('APP_URL', 'localhost'), //站点域名或URL
