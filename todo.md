@@ -16,3 +16,4 @@ https://github.com/lfq618/blog/blob/master/php/Swagger%E7%94%9F%E6%88%90php%20re
 
 ### TODO
 - swagger更多属性的支持
+- 简化响应体模型引用
