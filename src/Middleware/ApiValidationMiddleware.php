@@ -162,7 +162,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
 
             // 各请求方法的数据
             $headers   = array_map(function ($item) {
-                return $item[0];
+                return $item[0] ?? null;
             }, $request->getHeaders());
             $queryData = $request->getQueryParams();
             $postData  = $request->getParsedBody();
