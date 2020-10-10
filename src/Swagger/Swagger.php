@@ -98,7 +98,8 @@ class Swagger {
             ];
 
             if (in_array($item['type'], ['object', 'array'])) {
-                $item['items'] = new \stdClass(); //数组元素是任意类型
+                //非空数组元素是任意类型
+                $item['items'] = ($item['type'] == 'array' && empty($val)) ? [] : new \stdClass();
             }
 
             if ($item['type'] === 'integer') {
