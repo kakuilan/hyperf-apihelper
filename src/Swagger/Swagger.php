@@ -687,7 +687,7 @@ class Swagger {
             file_put_contents($htmlFile, $content);
         } else {
             // 删除 *.json文件
-            $fileList = $this->getFiles(BASE_PATH . '/public/swagger');
+            $fileList = $this->getFiles($saveDir);
             foreach ($fileList as $item) {
                 $ext = FileHelper::getFileExt($item);
                 if ($ext == 'json' && file_exists($item)) {
