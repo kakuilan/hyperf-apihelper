@@ -284,6 +284,27 @@ class Test extends BaseController {
         return self::doSuccess($data);
     }
 
+
+    /**
+     * @Get(path="/test/company2", description="简化响应体模型引用，其中refKey指定schema中的字段名，refValue为该字段要引用的模型名称")
+     * @ApiResponse(code=200, schema={"$ref":"Response"}, refKey="data", refValue="Company")
+     */
+    public function company2() {
+        $data = self::getDefaultDataBySchemaName('Company');
+        return self::doSuccess($data);
+    }
+
+
+    /**
+     * @Get(path="/test/company3", description="简化响应体模型引用，refKey可以不写，默认为data字段；")
+     * @ApiResponse(code=200, schema={"$ref":"Response"}, refValue="Company")
+     */
+    public function company3() {
+        $data = self::getDefaultDataBySchemaName('Company');
+        return self::doSuccess($data);
+    }
+
+
 }
 ```
 
@@ -321,12 +342,12 @@ class Test extends BaseController {
 
 
 ### 4.接口响应体
-- #### 4.1默认响应体结构
+- #### 4.1 默认响应体结构
     - 接口操作成功,返回{"status":true,"msg":"success","code":200,"data":[]}
     - 接口操作失败,返回{"status":false,"msg":"fail","code":400,"data":[]}
     - 自定义响应错误码code,可参考languages/zh_CN/apihelper.php
 
-- #### 4.2自定义响应体结构
+- #### 4.2 自定义响应体结构
     若要自定义响应体结构,可以  
     - 首先修改config/autoload/apihelper.php中的base_controller配置,指定基本控制器,如  
     ```php
@@ -343,7 +364,7 @@ class Test extends BaseController {
     - 最后,基本控制器作为控制器的父类,所有的控制器必须继承自该类.  
     具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
-- #### 4.3自定义多层级swagger model
+- #### 4.3 自定义多层级swagger model
     对接口响应的swagger结构模型生成,使用注解,如
     ```php
   @ApiResponse(code=200, schema={"$ref":"Response"})  
@@ -385,9 +406,20 @@ class Test extends BaseController {
   - 强调下,自定义swagger模型和自定义响应体结构两者是不同的;swagger模型只是描述API接口文档的,而响应体结构则是接口的输出结果;若接口文档和接口输出有差异,则你应该要检查接口输出逻辑.
   - 具体可参考[2.使用示例](#2使用示例)的自定义响应模型部分代码,以及`Hyperf\Apihelper\Controller\SchemaModel`
 
-
+- #### 4.4 简化响应体模型引用
+    通常响应体的最外层基本结构是固定的,变化的只是里面的数据字段.  
+    为了避免如`SchemaModel::getSchemaTestPersons()`、`SchemaModel::getSchemaTestCompany()`等重复的响应体定义工作,ApiResponse注解类提供了字段引用功能.例如:  
+    ```php
+    @ApiResponse(code=200, schema={"$ref":"Response"}, refKey="data", refValue="Company")
+    ```
+    其中`refKey`指定schema响应体中的字段名,可以不写,默认为data;`refValue`为该字段要引用的数据模型名称.  
+    当refKey和refValue都不为空,且refValue指定的模型已经定义时,该接口的基本响应体还是Response,只是它的data字段引用了Company模型.  
+    具体可参考[2.使用示例](#2使用示例)的简化响应体模型引用部分代码
+    
+    
+    
 ### 5.自定义前置动作、拦截动作和后置动作  
-- #### 5.1前置动作
+- #### 5.1 前置动作
     可以自定义控制器前置方法,每次在具体动作之前执行.  
     该功能主要是数据初始化,将自定义的数据存储到request属性中,每次请求后销毁,避免控制器协程间的数据混淆.  
     该方法必须严格定义，形如:  
@@ -398,7 +430,7 @@ class Test extends BaseController {
     方法名可以在config/autoload/apihelper.php中的`controller_antecedent`指定,默认为`initialization`  
     具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
-- #### 5.2拦截动作
+- #### 5.2 拦截动作
     可以自定义控制器拦截方法,每次在具体动作之前执行.  
     该功能主要是执行逻辑检查(如令牌或权限),当不符合要求时,中止后续具体动作的执行.  
     该方法必须严格定义,形如:  
@@ -409,7 +441,7 @@ class Test extends BaseController {
     方法名可以在config/autoload/apihelper.php中的`controller_intercept`指定,默认为`interceptor`  
     具体可参考`Hyperf\Apihelper\Controller\BaseController`.
 
-- #### 5.3后置动作
+- #### 5.3 后置动作
     可以自定义控制器后置方法,每次在具体动作之后执行,无论是否执行了拦截方法.  
     该功能主要是做一些日志收集和数据统计等.  
     该方法必须严格定义,形如:  
@@ -444,7 +476,7 @@ class Test extends BaseController {}
 
 
 ### 7.校验提示和数据获取
-- #### 7.1校验参数提示
+- #### 7.1 校验参数提示
     - 配置开发环境提示具体参数错误  
     编辑apihelper.php配置,将`show_params_detail_error`设为true,  
     接口将显示具体字段验证规则的错误信息,方便前端调试.
@@ -453,7 +485,7 @@ class Test extends BaseController {}
     编辑apihelper.php配置,将`show_params_detail_error`设为false,  
     接口将隐藏具体字段验证信息,而仅提示"缺少必要的参数,或参数类型错误",减少外部安全攻击的可能.
 
-- #### 7.2获取验证完的数据
+- #### 7.2 获取验证完的数据
     要获取具体参数,在控制器里面直接使用hyperf官方的方法去获取,如
     ```php
     $this->request->header('user-agent');
