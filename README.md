@@ -296,7 +296,7 @@ class Test extends BaseController {
 
 
     /**
-     * @Get(path="/test/company3", description="简化响应体模型引用，refKey可以不写，默认为data字段；")
+     * @Get(path="/test/company3", description="简化响应体模型引用，refKey可以不写，默认为data字段")
      * @ApiResponse(code=200, schema={"$ref":"Response"}, refValue="Company")
      */
     public function company3() {
