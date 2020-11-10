@@ -98,8 +98,7 @@ class Swagger {
             ];
 
             if (in_array($item['type'], ['object', 'array'])) {
-                //非空数组元素是任意类型
-                $item['items'] = ($item['type'] == 'array' && empty($val)) ? [] : new \stdClass();
+                $item['items'] = new \stdClass(); //数组元素是任意类型
             }
 
             if ($item['type'] === 'integer') {
@@ -169,6 +168,16 @@ class Swagger {
 
 
     /**
+     * 根据结构名获取已存在的definition
+     * @param string $schemaName
+     * @return array
+     */
+    public function getDefinitionBySchemaName(string $schemaName): array {
+        return $this->confSwagger['definitions'][$schemaName] ?? [];
+    }
+
+
+    /**
      * 解析模型嵌套数据
      * @param array $arr
      * @param array $methods
@@ -192,7 +201,7 @@ class Swagger {
                 }
                 $val = $ret;
             } elseif (is_string($val) && ValidateHelper::startsWith($val, '$')) {
-                $str = StringHelper::removeBefore($val, '$', true);
+                $str = self::turnRefSchema2Name($val);
                 if (ValidateHelper::isAlphaNumDash($str)) {
                     [$schemaName, $schemaMethod] = self::extractSchemaNameMethod($str);
                     if (in_array($schemaMethod, $methods)) {
@@ -243,7 +252,7 @@ class Swagger {
                 $item = self::parseExample($item, $methods);
             }
         } elseif (is_string($val) && ValidateHelper::startsWith($val, '$')) {
-            $str = StringHelper::removeBefore($val, '$', true);
+            $str = self::turnRefSchema2Name($val);
             if (ValidateHelper::isAlphaNumDash($str)) {
                 [$schemaName, $schemaMethod] = self::extractSchemaNameMethod($str);
                 if (in_array($schemaMethod, $methods)) {
@@ -271,9 +280,8 @@ class Swagger {
                 $schemaMethod = $str;
                 $schemaName   = str_replace(ApiAnnotation::$schemaMethodPrefix, '', $str);
             } else {
-                // 处理带引用的结构名,如 $Person
-                $str          = StringHelper::removeBefore($str, '$', true);
-                $schemaName   = ucfirst(StringHelper::toCamelCase($str));
+                // 处理带引用的结构名,如 $Person => Person
+                $schemaName   = self::turnRefSchema2Name($str);
                 $schemaMethod = ApiAnnotation::$schemaMethodPrefix . $schemaName;
             }
         }
@@ -307,6 +315,35 @@ class Swagger {
     public static function turnPath(string $path): string {
         $path = str_replace(['{', '}'], '', $path);
         return $path;
+    }
+
+
+    /**
+     * 将引用模型转换为名称(如 $name => Name)
+     * @param string $val
+     * @return string
+     */
+    public static function turnRefSchema2Name(string $val): string {
+        if (!empty($val)) {
+            $val = StringHelper::removeBefore($val, '$', true);
+            $val = ucfirst(StringHelper::toCamelCase($val));
+        }
+
+        return $val;
+    }
+
+
+    /**
+     * 将名称转换为引用(如 name => $name)
+     * @param string $val
+     * @return string
+     */
+    public static function turnName2RefSchema(string $val): string {
+        if (!empty($val) && !ValidateHelper::startsWith($val, '$')) {
+            $val = '$' . $val;
+        }
+
+        return $val;
     }
 
 
@@ -520,6 +557,7 @@ class Swagger {
         /** @var ApiResponse $item */
         foreach ($responses as $item) {
             $resp[$item->code] = ['description' => $item->description,];
+            $modelDefiniName   = implode('', array_map('ucfirst', explode('/', $path))) . ucfirst($method) . 'Response' . $item->code;
             if ($item->schema) {
                 //引用已定义的模型
                 if (is_array($item->schema) && array_key_exists('$ref', $item->schema) && array_key_exists($item->schema['$ref'], $this->confSwagger['definitions'])) {
@@ -531,12 +569,22 @@ class Swagger {
                         throw new RuntimeException("[{$schemaMethod}] must have the same structure as the return value of [getSchemaResponse]");
                     }
 
+                    //若响应结构有指定字段引用其他已定义的模型
+                    $item->refValue = self::turnRefSchema2Name(strval($item->refValue));
+                    if (isset($schemaData[$item->refKey]) && !empty($item->refValue) && array_key_exists($item->refValue, $this->confSwagger['definitions'])) {
+                        $schemaData[$item->refKey] = self::turnName2RefSchema($item->refValue);
+                        $ret                       = $this->responseSchemaTodefinition($schemaData, $modelDefiniName);
+                        if ($ret) {
+                            $resp[$item->code]['schema']['$ref'] = '#/definitions/' . $modelDefiniName;
+                            break;
+                        }
+                    }
+
                     $resp[$item->code]['schema']['$ref'] = '#/definitions/' . $item->schema['$ref'];
                 } else {
-                    $modelName = implode('', array_map('ucfirst', explode('/', $path))) . ucfirst($method) . 'Response' . $item->code;
-                    $ret       = $this->responseSchemaTodefinition($item->schema, $modelName);
+                    $ret = $this->responseSchemaTodefinition($item->schema, $modelDefiniName);
                     if ($ret) {
-                        $resp[$item->code]['schema']['$ref'] = '#/definitions/' . $modelName;
+                        $resp[$item->code]['schema']['$ref'] = '#/definitions/' . $modelDefiniName;
                     }
                 }
             }
@@ -582,7 +630,18 @@ class Swagger {
                     $this->confSwagger['definitions'][$definitionName] = $ret;
                 }
             } else {
-                $property['default'] = $val;
+                $isRef = false;
+                if (is_string($val) && ValidateHelper::startsWith($val, '$')) {
+                    $val   = self::turnRefSchema2Name($val);
+                    $isRef = array_key_exists($val, $this->confSwagger['definitions']);
+                }
+
+                if ($isRef) {
+                    $property['type'] = 'object';
+                    $property['$ref'] = '#/definitions/' . $val;
+                } else {
+                    $property['default'] = $val;
+                }
             }
             $definition['properties'][$key] = $property;
         }
@@ -592,31 +651,6 @@ class Swagger {
         }
 
         return $definition;
-    }
-
-
-    /**
-     * 获取目录下的文件
-     * @param string $path
-     * @return array
-     */
-    public function getFiles(string $path): array {
-        $res  = [];
-        $path = DirectoryHelper::formatDir($path);
-        if (!is_dir($path)) {
-            return $res;
-        }
-
-        $dp = dir($path);
-        while ($file = $dp->read()) {
-            $filepath = $path . $file;
-            if ($file != "." && $file != ".." && is_file($filepath)) {
-                array_push($res, $filepath);
-            }
-        }
-        @$dp->close();
-
-        return $res;
     }
 
 
@@ -687,7 +721,7 @@ class Swagger {
             file_put_contents($htmlFile, $content);
         } else {
             // 删除 *.json文件
-            $fileList = $this->getFiles($saveDir);
+            $fileList = DirectoryHelper::getFileTree(BASE_PATH . '/public/swagger', 'all');
             foreach ($fileList as $item) {
                 $ext = FileHelper::getFileExt($item);
                 if ($ext == 'json' && file_exists($item)) {

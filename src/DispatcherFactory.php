@@ -51,8 +51,7 @@ use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
 use ReflectionParameter;
-use Error;
-use Exception;
+use Throwable;
 
 
 /**
@@ -232,7 +231,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
                 throw new ServerRuntimeException("{$className}::{$afterAction} the first parameter type must be " . ServerRequestInterface::class);
             }
 
-            /** @var ReflectionParameter $firstArg */
+            /** @var ReflectionParameter $secondArg */
             $secondArg = $fn->getParameters()[1];
             if ($secondArg->getClass()->getName() != ResponseInterface::class) {
                 throw new ServerRuntimeException("{$className}::{$afterAction} the second parameter type must be " . ResponseInterface::class);
@@ -349,8 +348,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
                 try {
                     /** @var RouteCollector $router */
                     $router->addRoute($httpMethod, $route, $handler, $options);
-                } catch (Error $e) {
-                } catch (Exception $e) {
+                } catch (Throwable $e) {
                 }
             }
         };

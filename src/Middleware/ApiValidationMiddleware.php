@@ -43,7 +43,6 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionException;
 use ReflectionMethod;
-use Exception;
 use Throwable;
 
 
@@ -121,7 +120,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
             //先于动作之前调用
             try {
                 $beforeRet = call_user_func_array([$controllerInstance, $beforeAction], [$request]);
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 throw new RuntimeException($e);
             }
 
@@ -137,7 +136,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
             if ($subsequentAction) {
                 try {
                     call_user_func_array([$controllerInstance, $subsequentAction], [$request, $response]);
-                } catch (Exception $e) {
+                } catch (Throwable $e) {
                     throw new RuntimeException($e->getMessage(), $e->getCode(), $e);
                 }
             }
@@ -226,7 +225,7 @@ class ApiValidationMiddleware extends CoreMiddleware {
                 if (!empty($ret) && (is_array($ret) || is_string($ret))) {
                     return $doAfter(is_array($ret) ? $this->response->json($ret) : $this->response->raw($ret));
                 }
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 throw new RuntimeException($e->getMessage(), $e->getCode(), $e);
             }
         }

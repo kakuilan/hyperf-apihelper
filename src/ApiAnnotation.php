@@ -127,7 +127,7 @@ class ApiAnnotation {
         $path = strtolower($controllerClassName);
         $path = str_replace('\\', '/', $path);
         $path = str_replace('app/controller', '', $path); //去掉命名空间的前缀,如 app/controller/indexcontroller=>indexcontroller
-        $path = str_replace('controller', '', $path); //去掉类名中带有的controller,如indexcontroller=>index
+        $path = str_replace('controller', '', $path); //去掉类名中带有的controller,如 indexcontroller=>index
         return $path;
     }
 

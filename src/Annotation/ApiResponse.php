@@ -40,6 +40,18 @@ class ApiResponse extends AbstractAnnotation {
 
 
     /**
+     * @var string 指明schema中要引用的字段名,默认为data
+     */
+    public $refKey = 'data';
+
+
+    /**
+     * @var string 指明schema中引用字段的值(模型名称)
+     */
+    public $refValue;
+
+
+    /**
      * ApiResponse constructor.
      * @param null $value
      */
