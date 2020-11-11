@@ -45,7 +45,7 @@ return [
 EOF,
         ],
         'host'                => env('APP_URL', 'localhost'), //站点域名或URL
-        'basePath'            => '', //基础路径,可不改
+        'basePath'            => '/', //接口基础路径,可不改
         'schemes'             => ['http'], //协议
         'securityDefinitions' => [
             'jwt' => [
