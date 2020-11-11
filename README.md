@@ -314,10 +314,10 @@ class Test extends BaseController {
 - 组件会先执行Hyperf官方规则,详见[hyperf validation](https://hyperf.wiki/#/zh-cn/validation)
 - 再执行本组件的验证规则,包括:  
   - 转换器,有
-    - default,将参数值设为指定的默认值
-    - int/integer,将参数值转换为整型.注意:若未传该参数,则默认为intval(null)=0
-    - float,将参数值转换为浮点数.注意:若未传该参数,则默认为floatval(null)=0
-    - bool,将参数值转换为布尔型.注意:若未传该参数,则默认为boolval(null)=false ,其中字符串:  
+    - default,若未传该参数,或传空字符串时,将参数值设为指定的默认值
+    - int/integer,将非null参数值转换为整型.注意:若未传该参数,且未设默认值时,为null.
+    - float,将非null参数值转换为浮点数.注意:若未传该参数,且未设默认值时,为null.
+    - bool,将非null参数值转换为布尔型.注意:若未传该参数,且未设默认值时,为null.其中字符串:  
         - 'false', 'null', 'nil', 'none', '0', '0.0' 将转换为`false`
         - 'true', '1' 将转换为`true`
     - trim,过滤参数值前后空格

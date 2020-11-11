@@ -298,7 +298,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
                         if (method_exists(ValidatesAttributes::class, $hyperfMethod)) {
                             $hyperfs[$fieldName][] = $detail;
                         } elseif (!in_array($detail, ArrayHelper::multiArrayValues($customs))) { //非hyperf规则,且非本组件规则
-                            throw new ServerRuntimeException("The rule not defined: {$detail}");
+                            throw new ServerRuntimeException("The rule not defined: {$detail} [{$className}::{$action}->$fieldName]");
                         }
                     }
 

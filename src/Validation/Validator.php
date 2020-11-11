@@ -59,8 +59,8 @@ class Validator implements ValidationInterface {
      * @return array
      */
     public static function combineData(array $origin, array $new = []): array {
-        if (empty($origin) || empty($new)) {
-            return [];
+        if (empty($new)) {
+            return $origin;
         }
 
         foreach ($origin as $k => $item) {
@@ -129,10 +129,14 @@ class Validator implements ValidationInterface {
                 continue;
             }
 
+            //$field字段可能存在多级,如row.name
+            $fieldValue = ArrayHelper::getDotKey($allData, $field, null);
+
             foreach ($customRuleArr as $customRule) {
-                //$field字段可能存在多级,如row.name
-                $fieldValue  = ArrayHelper::getDotKey($allData, $field, null);
+                //首先检查默认规则
                 $detailRules = explode('|', $customRule);
+                [$detailRules, $fieldValue] = self::checkDefault($allData, $detailRules, $field, $fieldValue);
+
                 foreach ($detailRules as $detailRule) {
                     $ruleName = ApiAnnotation::parseRuleName($detailRule);
 
@@ -143,7 +147,7 @@ class Validator implements ValidationInterface {
                     }
 
                     $convMethod = 'conver_' . $ruleName;
-                    if (method_exists($this, $convMethod)) {
+                    if (!is_null($fieldValue) && method_exists($this, $convMethod)) {
                         $fieldValue = call_user_func_array([$this, $convMethod,], [$fieldValue, $optionArr]);
                     }
 
@@ -180,7 +184,9 @@ class Validator implements ValidationInterface {
                 }
             }
 
-            ArrayHelper::setDotKey($data, $field, $fieldValue);
+            if (!is_null($fieldValue)) {
+                ArrayHelper::setDotKey($data, $field, $fieldValue);
+            }
         }
 
         $errors = array_merge($errors, $validator->errors()->getMessages());
@@ -190,9 +196,39 @@ class Validator implements ValidationInterface {
 
 
     /**
+     * 检查数据的字段是否有默认规则,若有则设置,然后删除默认规则
+     * @param array $data 数据
+     * @param array $rules 规则
+     * @param string $field 字段
+     * @param mixed $val 字段值
+     * @return array
+     */
+    public static function checkDefault(array $data, array $rules, string $field, $val = null): array {
+        if (is_null($val) || $val === '') {
+            foreach ($rules as $k => $rule) {
+                $ruleName  = ApiAnnotation::parseRuleName($rule);
+                $optionStr = explode(':', $rule)[1] ?? '';
+                $optionArr = explode(',', $optionStr);
+                if ($optionStr == '' && empty($optionArr)) {
+                    array_push($optionArr, '');
+                }
+                if ($ruleName == 'default') {
+                    $val = self::conver_default($val, $optionArr);
+
+                    unset($rules[$k]);
+                    break;
+                }
+            }
+        }
+
+        return [$rules, $val];
+    }
+
+
+    /**
      * 转换器-默认值
-     * @param $val
-     * @param array $options
+     * @param $val 原值
+     * @param array $options 默认值选项
      * @return array|mixed
      */
     public static function conver_default($val, array $options = []) {
@@ -354,7 +390,7 @@ class Validator implements ValidationInterface {
      */
     public function rule_cnmobile($val, string $field, array $options = []): array {
         $err = '';
-        $chk = ValidateHelper::isMobilecn($val);
+        $chk = ValidateHelper::isMobilecn(strval($val));
         if (!$chk) {
             $err = $this->translator->trans('apihelper.rule_cnmobile', ['field' => $field]);
         }
@@ -372,7 +408,7 @@ class Validator implements ValidationInterface {
      */
     public function rule_cncreditno($val, string $field, array $options = []): array {
         $err = '';
-        $chk = ValidateHelper::isChinaCreditNo($val);
+        $chk = ValidateHelper::isChinaCreditNo(strval($val));
         if (!$chk) {
             $err = $this->translator->trans('apihelper.rule_cncreditno', ['field' => $field]);
         }
@@ -390,7 +426,7 @@ class Validator implements ValidationInterface {
      */
     public function rule_safe_password($val, string $field, array $options = []): array {
         $err   = '';
-        $level = StringHelper::passwdSafeGrade($val);
+        $level = StringHelper::passwdSafeGrade(strval($val));
         if ($level < 2) {
             $err = $this->translator->trans('apihelper.rule_safe_password_simple', ['field' => $field]);
             return [false, $err];
