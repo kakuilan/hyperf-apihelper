@@ -334,7 +334,8 @@ class DispatcherFactory extends BaseDispatcherFactory {
         }
 
         $router     = $this->getRouter($controllerAnnos->server);
-        $basePath   = $this->getPrefix($className, $controllerAnnos->prefix);
+        $prefix     = trim($controllerAnnos->prefix, '/');
+        $basePath   = $this->getPrefix($className, $prefix);
         $versions   = ApiAnnotation::getVersionMetadata($className);
         $useVerPath = (bool)$this->config->get('api.use_version_path', true);
 
@@ -346,7 +347,6 @@ class DispatcherFactory extends BaseDispatcherFactory {
             if (!in_array($key, $routeAddeds)) {
                 array_push($routeAddeds, $key);
                 try {
-                    /** @var RouteCollector $router */
                     $router->addRoute($httpMethod, $route, $handler, $options);
                 } catch (Throwable $e) {
                 }
@@ -367,13 +367,18 @@ class DispatcherFactory extends BaseDispatcherFactory {
                 if ($anno instanceof Methods) {
                     $path = $basePath . '/' . $action;
 
-                    if ($anno->path) {
+                    if (!empty($anno->path)) {
+                        $annoPath = $anno->path;
+                        if ($annoPath[0] !== '/') {
+                            $annoPath = '/' . $annoPath;
+                        }
+
                         //仅仅是路由参数,如 {id}
-                        $justId = preg_match('/^{.*}$/', $anno->path);
-                        if ($justId) {
-                            $path = $basePath . '/' . $anno->path;
+                        $isRouteParam = preg_match('/^{.*}$/', $annoPath);
+                        if ($isRouteParam) {
+                            $path = $basePath . '/' . $annoPath;
                         } else {
-                            $path = $anno->path;
+                            $path = $prefix . $annoPath;
                         }
                     }
 

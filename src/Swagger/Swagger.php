@@ -25,6 +25,7 @@ use Hyperf\Di\Annotation\Inject;
 use Hyperf\Server\Exception\RuntimeException;
 use Hyperf\Utils\ApplicationContext;
 use Kph\Helpers\ArrayHelper;
+use Kph\Helpers\ConvertHelper;
 use Kph\Helpers\DirectoryHelper;
 use Kph\Helpers\FileHelper;
 use Kph\Helpers\OsHelper;
@@ -243,7 +244,7 @@ class Swagger {
      */
     public static function parseExample($val, array $methods = []) {
         if (is_object($val) && !ValidateHelper::isEmptyObject($val)) {
-            $val = ArrayHelper::object2Array($val);
+            $val = ConvertHelper::object2Array($val);
         }
 
         if (is_array($val) && !empty($val)) {

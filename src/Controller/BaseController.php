@@ -17,6 +17,7 @@ use Hyperf\Di\Annotation\Inject;
 use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\HttpServer\Contract\ResponseInterface;
 use Kph\Helpers\ArrayHelper;
+use Kph\Helpers\ConvertHelper;
 use Kph\Helpers\StringHelper;
 use Kph\Helpers\ValidateHelper;
 use Kph\Objects\BaseObject;
@@ -91,7 +92,7 @@ abstract class BaseController extends BaseObject implements ControllerInterface 
         if (is_bool($data)) {
             $result['data'] = [];
         } elseif (is_object($data)) {
-            $data           = ArrayHelper::object2Array($data);
+            $data           = ConvertHelper::object2Array($data);
             $result['data'] = array_merge((array)$result['data'], $data);
         } elseif (is_array($data)) {
             $result['data'] = array_merge((array)$result['data'], $data);
