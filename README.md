@@ -78,7 +78,7 @@ use Hyperf\Apihelper\Controller\BaseController;
 use Hyperf\Apihelper\Exception\ValidationException;
 
 /**
- * @ApiController(tag="测试实例", prefix="/hello" , description="测试例子")
+ * @ApiController(tag="测试实例", prefix="/hello", description="测试例子")
  * @ApiVersion(group="v1", description="第一版本")
  */
 class Test extends BaseController {
