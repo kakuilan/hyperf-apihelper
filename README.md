@@ -493,6 +493,7 @@ class Test extends BaseController {}
     $this->request->post();
     $this->request->route('id');
     $this->request->getUploadedFiles();
+    $this->request->getBody()->getContents();
     ```
     
     **注意:所有的参数都已经过校验处理,不再是原始的数据.**  
