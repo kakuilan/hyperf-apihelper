@@ -323,11 +323,11 @@ class Test extends BaseController {
     - trim,过滤参数值前后空格
 
   - 扩展规则,有
-    - safe_password,检查是否安全密码
+    - enum,检查参数值是否枚举值中的一个
     - natural,检查是否自然数
     - cnmobile,检查是否中国手机号
     - cncreditno,检查是否中国身份证号
-    - enum,检查参数值是否枚举值中的一个
+    - safe_password,检查是否安全密码
     
   - 控制器验证方法.  
   若需要在控制器中执行比较复杂的逻辑去验证,则可以使用该方式.  
