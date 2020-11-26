@@ -333,7 +333,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
         }
 
         $router     = $this->getRouter($controllerAnnos->server);
-        $prefix     = trim($controllerAnnos->prefix, '/');
+        $prefix     = rtrim($controllerAnnos->prefix, '/');
         $basePath   = $this->getPrefix($className, $prefix);
         $versions   = ApiAnnotation::getVersionMetadata($className);
         $useVerPath = (bool)$this->config->get('api.use_version_path', true);

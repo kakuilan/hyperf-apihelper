@@ -197,14 +197,14 @@ class Test extends BaseController {
             $value,
         ];
 
-        //检查
-        //        if (!isset($arr['hello'])) {
-        //            $res = [
-        //                false,
-        //                'body必须包含hello字段',
-        //            ];
-        //            return $res;
-        //        }
+        //自行检查
+        if (!isset($arr['hello'])) {
+            $res = [
+                false,
+                'body必须包含hello字段',
+            ];
+            return $res;
+        }
 
         //或者
         if (!isset($arr['world'])) {
