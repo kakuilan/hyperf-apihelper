@@ -57,7 +57,6 @@ return [
 
 ```php
 return [
-    Hyperf\Apihelper\Validation\ValidationInterface::class => Hyperf\Apihelper\Validation\Validator::class,
     Hyperf\HttpServer\Router\DispatcherFactory::class => Hyperf\Apihelper\DispatcherFactory::class
 ];
 ```
