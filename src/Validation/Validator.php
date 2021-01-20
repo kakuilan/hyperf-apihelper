@@ -1,6 +1,6 @@
 <?php
 /**
- * Created by PhpStorm.
+ * Copyright (c) 2020 LKK All rights reserved
  * User: kakuilan
  * Date: 2020/3/9
  * Time: 16:02
@@ -227,7 +227,7 @@ class Validator implements ValidationInterface {
 
     /**
      * 转换器-默认值
-     * @param $val 原值
+     * @param mixed $val 原值
      * @param array $options 默认值选项
      * @return array|mixed
      */

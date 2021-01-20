@@ -1,7 +1,7 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: Administrator
+ * Copyright (c) 2020 LKK All rights reserved
+ * User: kakuilan
  * Date: 2020/5/17
  * Time: 11:01
  * Desc: 定义响应体模型结构,以及获取方法.
