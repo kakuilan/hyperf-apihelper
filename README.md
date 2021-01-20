@@ -531,6 +531,33 @@ class Test extends BaseController {}
     - 从v0.3.5起,接口多版本分组功能,默认会自动在路由前加上版本号前缀,实际路径将发生改变.
     - 若你希望不影响已绑定的路由,可将配置`use_version_path`修改为`false` 
 
+### 10. 其他注意事项
+- 框架自有的AutoController(或Controller)和本组件的ApiController注解不能同时使用,否则会引起路由混乱.  
+下面是错误的示例:  
+  ```php
+  /**
+  * @AutoController()
+  * @ApiController()
+  */
+  class Test extends BaseController {}
+  ```
+  下面是正确的示例:  
+    ```php
+    /**
+    * @AutoController()
+    */
+    class Test extends BaseController {}
+    ```
+  或  
+    ```php
+    /**
+    * @ApiController()
+    */
+    class Test extends BaseController {}
+    ```
+
+
+
 
 ### 图例
 ![api多版本](tests/01.jpg)  
