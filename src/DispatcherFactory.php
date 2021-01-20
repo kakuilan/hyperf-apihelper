@@ -119,6 +119,10 @@ class DispatcherFactory extends BaseDispatcherFactory {
      * @throws ReflectionException
      */
     protected function initAnnotationRoute(array $collector): void {
+
+        //调用父类注解路由
+        parent::initAnnotationRoute($collector);
+
         //检查基本控制器配置
         $baseCtrlClass = $this->config->get('api.base_controller');
         if (empty($baseCtrlClass)) {
@@ -129,7 +133,7 @@ class DispatcherFactory extends BaseDispatcherFactory {
 
         $routes = [];
         foreach ($collector as $className => $metadata) {
-            //是否控制器
+            //是否API控制器
             if (isset($metadata['_c'][ApiController::class])) {
                 //控制器中间件
                 $middlewares = $this->handleMiddleware($metadata['_c']);
