@@ -16,9 +16,12 @@ use Hyperf\Apihelper\Exception\ValidationException;
 use Hyperf\Contract\TranslatorInterface;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\Server\Exception\RuntimeException;
+use Hyperf\Translation\TranslatorFactory;
+use Hyperf\Utils\ApplicationContext;
 use Hyperf\Utils\Arr;
 use Hyperf\Validation\Concerns\ValidatesAttributes;
 use Hyperf\Validation\Contract\ValidatorFactoryInterface;
+use Hyperf\Validation\ValidatorFactory;
 use Kph\Helpers\ArrayHelper;
 use Kph\Helpers\StringHelper;
 use Kph\Helpers\ValidateHelper;
@@ -50,6 +53,19 @@ class Validator implements ValidationInterface {
      * @var TranslatorInterface
      */
     private $translator;
+
+
+    /**
+     * Validator constructor.
+     */
+    public function __construct() {
+        if (is_null($this->validator)) {
+            $this->validator = ApplicationContext::getContainer()->get(ValidatorFactory::class);
+        }
+        if (is_null($this->translator)) {
+            $this->translator = ApplicationContext::getContainer()->get(TranslatorFactory::class);
+        }
+    }
 
 
     /**

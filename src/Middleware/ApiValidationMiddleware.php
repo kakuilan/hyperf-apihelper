@@ -32,6 +32,7 @@ use Hyperf\HttpServer\Contract\RequestInterface;
 use Hyperf\HttpServer\Contract\ResponseInterface as HttpResponse;
 use Hyperf\HttpServer\CoreMiddleware;
 use Hyperf\HttpServer\Router\Dispatched;
+use Hyperf\HttpServer\Server;
 use Hyperf\HttpServer\Router\Handler;
 use Hyperf\Server\Exception\RuntimeException;
 use Hyperf\Utils\Context;
@@ -76,12 +77,11 @@ class ApiValidationMiddleware extends CoreMiddleware {
      * @param HttpResponse $response
      * @param RequestInterface $request
      */
-    public function __construct(ContainerInterface $container, HttpResponse $response, RequestInterface $request) {
-        $this->container = $container;
-        $this->response  = $response;
-        $this->request   = $request;
+    public function __construct(ContainerInterface $container, HttpResponse $response, RequestInterface $request, Server $server) {
+        $this->response = $response;
+        $this->request  = $request;
 
-        parent::__construct($container, 'http');
+        parent::__construct($container, $server->getServerName());
     }
 
 
