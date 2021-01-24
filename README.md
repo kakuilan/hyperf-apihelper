@@ -543,7 +543,7 @@ class Test extends BaseController {}
 
 ### 10. 其他注意事项
 
-- 框架自有的AutoController(或Controller)和本组件的ApiController注解不能同时使用,否则会引起路由混乱.  
+- Hyperf框架自有的AutoController(或Controller)和本组件的ApiController注解不能同时使用,否则会引起路由混乱.  
   下面是错误的示例:
   ```php
   /**
