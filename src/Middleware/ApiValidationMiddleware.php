@@ -77,10 +77,12 @@ class ApiValidationMiddleware extends CoreMiddleware {
      * @param HttpResponse $response
      * @param RequestInterface $request
      */
-    public function __construct(ContainerInterface $container, HttpResponse $response, RequestInterface $request, Server $server) {
+    public function __construct(ContainerInterface $container, HttpResponse $response, RequestInterface $request) {
         $this->response = $response;
         $this->request  = $request;
-        $serverName     = (string)$server->getServerName();
+
+        $server     = $container->get(Server::class);
+        $serverName = (string)$server->getServerName();
 
         parent::__construct($container, $serverName ? $serverName : Consts::UNKNOWN);
     }
