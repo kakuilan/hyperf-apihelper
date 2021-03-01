@@ -339,7 +339,7 @@ class Test extends BaseController {
 
     - 控制器验证方法.  
       若需要在控制器中执行比较复杂的逻辑去验证,则可以使用该方式.  
-      如上例中的cb_chkHello,规则名以cb_开头,后跟控制器的方法名chkHello.  
+      如上例中的cb_chkHello,规则名以`cb_`开头,后跟控制器的方法名chkHello.  
       验证方法必须定义接受3个参数:$value, $field, $options;  
       返回结果必须是一个数组:  
       若检查失败,为[false, 'error msg'];若检查通过,为[true, $newValue],$newValue为参数值的新值.  
