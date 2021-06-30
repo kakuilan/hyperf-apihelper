@@ -35,7 +35,7 @@ php bin/hyperf.php vendor:publish kakuilan/hyperf-apihelper
 ```php
 return [
     'http' => [
-        Hyperf\Apihelper\Middleware\ApiValidationMiddleware,
+        Hyperf\Apihelper\Middleware\ApiValidationMiddleware::class,
     ],
 ];
 ```
@@ -46,6 +46,7 @@ return [
 return [
     'handler' => [
         'http' => [
+            Hyperf\HttpServer\Exception\Handler\HttpExceptionHandler::class,
             Hyperf\Apihelper\Exception\Handler\ValidationExceptionHandler::class,
             App\Exception\Handler\AppExceptionHandler::class,
         ],
