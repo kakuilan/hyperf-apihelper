@@ -29,7 +29,7 @@ php bin/hyperf.php vendor:publish kakuilan/hyperf-apihelper
 
 ### 1.配置
 
-- 修改config/autoload/apihelper.php中的配置,将`host`改为你的域名,如test.com,则接口文档地址为test.com/swagger
+- 修改config/autoload/apihelper.php中的配置,将`host`改为你的域名(如test.com),则接口文档地址为test.com/swagger
 - 修改config/autoload/middlewares.php中间件配置,如
 
 ```php
@@ -489,11 +489,11 @@ class Test extends BaseController {}
 
 - #### 7.1 校验参数提示
     - 配置开发环境提示具体参数错误  
-      编辑apihelper.php配置,将`show_params_detail_error`设为true,  
+      编辑apihelper.php配置,将`show_params_detail_error`设为`true`,  
       接口将显示具体字段验证规则的错误信息,方便前端调试.
 
     - 配置生产环境不提示具体参数错误  
-      编辑apihelper.php配置,将`show_params_detail_error`设为false,  
+      编辑apihelper.php配置,将`show_params_detail_error`设为`false`,  
       接口将隐藏具体字段验证信息,而仅提示"缺少必要的参数,或参数类型错误",减少外部安全攻击的可能.
 
 - #### 7.2 获取验证完的数据
@@ -568,7 +568,7 @@ class Test extends BaseController {}
     class Test extends BaseController {}
     ```
 
-### 图例
+### 11. 图例
 
 ![api多版本](tests/01.jpg)
 
