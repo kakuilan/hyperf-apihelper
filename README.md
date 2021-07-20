@@ -14,6 +14,13 @@ hyperf api and swagger helper.
 - 支持自定义拦截动作.
 - 支持自定义后置动作.
 
+支持：
+- php 7.2~7.4
+- hyperf 1.1/2.1/2.2
+
+不支持：
+- php 8.x
+
 ### 0.安装
 
 - nginx(或apache)指定站点目录为 BASE_PATH/public, swagger-ui将自动发布到该目录下
