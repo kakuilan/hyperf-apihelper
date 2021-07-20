@@ -1,4 +1,5 @@
 swagger
+https://github.com/swagger-api/swagger-ui
 https://petstore.swagger.io/
 http://petstore.swagger.io/v2/swagger.json
 https://swagger.io/docs/specification/2-0/describing-parameters/
