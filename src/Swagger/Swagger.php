@@ -714,11 +714,13 @@ class Swagger {
             file_put_contents($filePath, json_encode($swaggerAll, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
             // 修改index.html
+            $template = $saveDir . 'template.html';
             $htmlFile = $saveDir . 'index.html';
-            $content  = file_get_contents($htmlFile);
-            $urlStr   = json_encode($urls, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-            $urlStr   = "urls:" . str_replace("\\/", "/", $urlStr);
-            $content  = preg_replace("/urls:\[.*\]/is", $urlStr, $content, -1);
+            copy($template, $htmlFile);
+            $content = file_get_contents($htmlFile);
+            $urlStr  = json_encode($urls, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            $urlStr  = "urls:" . str_replace("\\/", "/", $urlStr);
+            $content = preg_replace("/urls:\[.*\]/is", $urlStr, $content, -1);
             file_put_contents($htmlFile, $content);
         } else {
             // 删除 *.json文件

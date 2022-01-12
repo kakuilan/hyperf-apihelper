@@ -64,8 +64,8 @@ class ConfigProvider {
                 [
                     'id'          => 'html',
                     'description' => '',
-                    'source'      => __DIR__ . '/../publish/swagger/index.html', //源文件
-                    'destination' => BASE_PATH . '/public/swagger/index.html', //目标路径
+                    'source'      => __DIR__ . '/../publish/swagger/template.html', //源文件
+                    'destination' => BASE_PATH . '/public/swagger/template.html', //目标路径
                 ],
                 [
                     'id'          => 'ui css',
