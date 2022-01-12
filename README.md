@@ -15,11 +15,16 @@ hyperf api and swagger helper.
 - 支持自定义后置动作.
 
 支持：
+
 - php 7.2~7.4
 - hyperf 1.1/2.1/2.2
 
 不支持：
+
 - php 8.x
+
+### !!注意
+***旧版本升级到0.5.7时,须手动将`public/swagger/index.html`重命名为`template.html`***
 
 ### 0.安装
 
@@ -544,6 +549,9 @@ class Test extends BaseController {}
     - `ControllerInterface::getResponseSchema`已改为`ControllerInterface::getSchemaResponse`
     - `BaseController::getResponseSchema`已改为`BaseController::getSchemaResponse`
     - 将你代码中引用到的`getResponseSchema`修改为`getSchemaResponse`
+
+- #### v0.5.7升级:
+    - 旧版本升级到0.5.7时,须将`public/swagger/index.html`重命名为`template.html`
 
 - #### v0.3.5升级:
     - 从v0.3.5起,接口多版本分组功能,默认会自动在路由前加上版本号前缀,实际路径将发生改变.
