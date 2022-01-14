@@ -16,12 +16,12 @@ hyperf api and swagger helper.
 
 支持：
 
-- php 7.2~7.4
+- php 7.2~7.4,8.0
 - hyperf 1.1/2.1/2.2
 
 不支持：
 
-- php 8.x
+- php8注解
 
 ### !!注意
 
