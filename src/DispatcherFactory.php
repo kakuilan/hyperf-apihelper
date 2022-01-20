@@ -230,13 +230,13 @@ class DispatcherFactory extends BaseDispatcherFactory {
 
             /** @var ReflectionParameter $firstArg */
             $firstArg = $fn->getParameters()[0];
-            if ($firstArg->getClass()->getName() != ServerRequestInterface::class) {
+            if ($firstArg->getType()->getName() != ServerRequestInterface::class) {
                 throw new ServerRuntimeException("{$className}::{$afterAction} the first parameter type must be " . ServerRequestInterface::class);
             }
 
             /** @var ReflectionParameter $secondArg */
             $secondArg = $fn->getParameters()[1];
-            if ($secondArg->getClass()->getName() != ResponseInterface::class) {
+            if ($secondArg->getType()->getName() != ResponseInterface::class) {
                 throw new ServerRuntimeException("{$className}::{$afterAction} the second parameter type must be " . ResponseInterface::class);
             }
 
